@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays } from 'lucide-react';
 
 // Comprehensive peptide/medication list
 const MEDICATIONS = [
@@ -37,6 +37,7 @@ const HealthTracker = () => {
   const [progressPhotos, setProgressPhotos] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [titrationPlans, setTitrationPlans] = useState([]);
+  const [journalEntries, setJournalEntries] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState({ height: 70, goalWeight: 200 });
@@ -86,6 +87,17 @@ const HealthTracker = () => {
   const [reconDesiredUnit, setReconDesiredUnit] = useState('mcg');
   const [reconResult, setReconResult] = useState(null);
 
+  // Journal form states
+  const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0]);
+  const [journalContent, setJournalContent] = useState('');
+  const [journalMood, setJournalMood] = useState('neutral');
+  const [journalEnergy, setJournalEnergy] = useState(5);
+  const [journalHunger, setJournalHunger] = useState(5);
+  const [editingJournal, setEditingJournal] = useState(null);
+
+  // Calendar state
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
   const photoInputRef = useRef(null);
 
   useEffect(() => { loadData(); }, []);
@@ -100,6 +112,7 @@ const HealthTracker = () => {
       const photoData = localStorage.getItem('health-photos');
       const scheduleData = localStorage.getItem('health-schedules');
       const titrationData = localStorage.getItem('health-titration');
+      const journalData = localStorage.getItem('health-journal');
       
       if (weightData) setWeightEntries(JSON.parse(weightData));
       if (injectionData) setInjectionEntries(JSON.parse(injectionData));
@@ -108,6 +121,7 @@ const HealthTracker = () => {
       if (photoData) setProgressPhotos(JSON.parse(photoData));
       if (scheduleData) setSchedules(JSON.parse(scheduleData));
       if (titrationData) setTitrationPlans(JSON.parse(titrationData));
+      if (journalData) setJournalEntries(JSON.parse(journalData));
     } catch (error) {
       console.log('Loading data:', error);
     }
@@ -122,6 +136,7 @@ const HealthTracker = () => {
   const resetWeightForm = () => { setWeight(''); setWeightDate(new Date().toISOString().split('T')[0]); setEditingWeight(null); setShowAddForm(false); };
   const resetInjectionForm = () => { setInjectionType('Semaglutide'); setInjectionDose(''); setInjectionUnit('mg'); setInjectionDate(new Date().toISOString().split('T')[0]); setInjectionSite('Stomach'); setInjectionNotes(''); setSelectedSideEffects([]); setEditingInjection(null); setShowAddForm(false); setShowMedDropdown(false); setMedSearchTerm(''); };
   const resetMeasurementForm = () => { setMeasurementType('Waist'); setMeasurementValue(''); setMeasurementDate(new Date().toISOString().split('T')[0]); setShowAddForm(false); };
+  const resetJournalForm = () => { setJournalContent(''); setJournalMood('neutral'); setJournalEnergy(5); setJournalHunger(5); setJournalDate(new Date().toISOString().split('T')[0]); setEditingJournal(null); setShowAddForm(false); };
 
   // CRUD operations
   const addOrUpdateWeight = () => {
@@ -211,6 +226,28 @@ const HealthTracker = () => {
     const updated = titrationPlans.filter(t => t.id !== id);
     setTitrationPlans(updated);
     saveData('health-titration', updated);
+  };
+
+  // Journal CRUD operations
+  const addOrUpdateJournal = () => {
+    if (!journalContent.trim()) return;
+    if (editingJournal) {
+      const updated = journalEntries.map(e => e.id === editingJournal.id ? { ...e, date: journalDate, content: journalContent, mood: journalMood, energy: journalEnergy, hunger: journalHunger } : e);
+      setJournalEntries(updated);
+      saveData('health-journal', updated);
+    } else {
+      const newEntry = { id: Date.now(), date: journalDate, content: journalContent, mood: journalMood, energy: journalEnergy, hunger: journalHunger };
+      const updated = [...journalEntries, newEntry];
+      setJournalEntries(updated);
+      saveData('health-journal', updated);
+    }
+    resetJournalForm();
+  };
+
+  const deleteJournal = (id) => {
+    const updated = journalEntries.filter(e => e.id !== id);
+    setJournalEntries(updated);
+    saveData('health-journal', updated);
   };
 
   const handlePhotoUpload = (e) => {
@@ -364,6 +401,37 @@ const HealthTracker = () => {
     return stats;
   };
 
+  const getMeasurementChartData = () => {
+    const dates = [...new Set(measurementEntries.map(e => e.date))].sort();
+    return dates.map(date => {
+      const dataPoint = { date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
+      MEASUREMENT_TYPES.forEach(type => {
+        const entry = measurementEntries.find(e => e.date === date && e.type === type);
+        if (entry) dataPoint[type] = parseFloat(entry.value);
+      });
+      return dataPoint;
+    });
+  };
+
+  const getCalendarDays = () => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      const injections = injectionEntries.filter(inj => inj.date === dateStr);
+      const isCurrentMonth = date.getMonth() === month;
+      days.push({ date, dateStr, injections, isCurrentMonth, isToday: dateStr === new Date().toISOString().split('T')[0] });
+    }
+    return days;
+  };
+
   const calculateDose = () => {
     if (!calcConcentration || !calcDesiredDose) return;
     let desiredMg = parseFloat(calcDesiredDose);
@@ -423,6 +491,8 @@ const HealthTracker = () => {
             { id: 'weight', icon: Scale, label: 'Weight' },
             { id: 'injections', icon: Syringe, label: 'Injections' },
             { id: 'measurements', icon: Ruler, label: 'Body' },
+            { id: 'journal', icon: BookOpen, label: 'Journal' },
+            { id: 'calendar', icon: CalendarDays, label: 'Calendar' },
             { id: 'tools', icon: Wrench, label: 'Tools' }
           ].map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setShowAddForm(false); }}
@@ -779,6 +849,26 @@ const HealthTracker = () => {
               </div>
             )}
 
+            {/* Body Measurements Chart */}
+            {measurementEntries.length > 0 && getMeasurementChartData().length > 0 && (
+              <div className="bg-slate-800/50 rounded-xl p-4">
+                <h3 className="text-white font-medium mb-3">Measurement Progress</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={getMeasurementChartData()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
+                    <YAxis stroke="#94a3b8" fontSize={10} unit='"' />
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }} />
+                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                    {MEASUREMENT_TYPES.map((type, idx) => {
+                      const colors = ['#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#a855f7', '#14b8a6', '#f97316'];
+                      return <Line key={type} type="monotone" dataKey={type} stroke={colors[idx % colors.length]} strokeWidth={2} dot={{ r: 4 }} connectNulls name={type} />;
+                    })}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
             {/* Add Measurement Form */}
             {showAddForm && (
               <div className="bg-slate-800 rounded-xl p-4">
@@ -1046,6 +1136,166 @@ const HealthTracker = () => {
                 <div className="flex justify-between text-slate-400"><span>1 mg</span><span className="text-white">= 1000 mcg</span></div>
                 <div className="flex justify-between text-slate-400"><span>0.5 mL</span><span className="text-white">= 50 units</span></div>
                 <div className="flex justify-between text-slate-400"><span>0.1 mL</span><span className="text-white">= 10 units</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* JOURNAL TAB */}
+        {activeTab === 'journal' && (
+          <div className="space-y-4">
+            {showAddForm && (
+              <div className="bg-slate-800 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-white font-medium">{editingJournal ? 'Edit Entry' : 'New Journal Entry'}</h3>
+                  <button onClick={resetJournalForm} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Date</label>
+                    <input type="date" value={journalDate} onChange={(e) => setJournalDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" />
+                  </div>
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-2">How are you feeling?</label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 'happy', icon: Smile, color: 'text-emerald-400', label: 'Great' },
+                        { value: 'neutral', icon: Meh, color: 'text-slate-400', label: 'Okay' },
+                        { value: 'sad', icon: Frown, color: 'text-amber-400', label: 'Rough' }
+                      ].map(mood => (
+                        <button key={mood.value} onClick={() => setJournalMood(mood.value)}
+                          className={`flex-1 py-3 rounded-lg transition-all ${journalMood === mood.value ? 'bg-slate-600' : 'bg-slate-700 hover:bg-slate-650'}`}>
+                          <mood.icon className={`h-6 w-6 mx-auto ${mood.color}`} />
+                          <div className="text-xs text-slate-400 mt-1">{mood.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Energy Level: {journalEnergy}/10</label>
+                    <input type="range" min="1" max="10" value={journalEnergy} onChange={(e) => setJournalEnergy(parseInt(e.target.value))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Hunger Level: {journalHunger}/10</label>
+                    <input type="range" min="1" max="10" value={journalHunger} onChange={(e) => setJournalHunger(parseInt(e.target.value))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+                  <div>
+                    <label className="text-slate-400 text-sm block mb-1">Notes & Observations</label>
+                    <textarea value={journalContent} onChange={(e) => setJournalContent(e.target.value)}
+                      className="w-full bg-slate-700 text-white rounded-lg px-4 py-3 min-h-32" placeholder="How did you feel today? Any side effects? Non-scale victories?" />
+                  </div>
+                  <button onClick={addOrUpdateJournal} className="w-full bg-violet-500 hover:bg-violet-600 text-white font-medium py-3 rounded-lg">
+                    {editingJournal ? 'Update Entry' : 'Save Entry'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-slate-800 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-medium flex items-center gap-2"><BookOpen className="h-4 w-4 text-violet-400" />Journal Entries</h3>
+                {!showAddForm && <button onClick={() => setShowAddForm(true)} className="bg-violet-500 hover:bg-violet-600 text-white p-2 rounded-lg"><Plus className="h-5 w-5" /></button>}
+              </div>
+              {journalEntries.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No journal entries yet</p>
+                  <p className="text-sm">Track your daily observations and progress</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {[...journalEntries].sort((a, b) => new Date(b.date) - new Date(a.date)).map((entry) => (
+                    <div key={entry.id} className="bg-slate-700/50 rounded-lg p-4 group">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          {entry.mood === 'happy' && <Smile className="h-5 w-5 text-emerald-400" />}
+                          {entry.mood === 'neutral' && <Meh className="h-5 w-5 text-slate-400" />}
+                          {entry.mood === 'sad' && <Frown className="h-5 w-5 text-amber-400" />}
+                          <span className="text-white font-medium">{new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => { setEditingJournal(entry); setJournalDate(entry.date); setJournalContent(entry.content); setJournalMood(entry.mood); setJournalEnergy(entry.energy); setJournalHunger(entry.hunger); setShowAddForm(true); }}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-600 rounded-lg"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => deleteJournal(entry.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                      <div className="flex gap-4 mb-2 text-sm">
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Zap className="h-4 w-4" />
+                          <span>Energy: {entry.energy}/10</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Activity className="h-4 w-4" />
+                          <span>Hunger: {entry.hunger}/10</span>
+                        </div>
+                      </div>
+                      <p className="text-white whitespace-pre-wrap">{entry.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* CALENDAR TAB */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-4">
+            <div className="bg-slate-800 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-4">
+                <button onClick={() => { const newMonth = new Date(calendarMonth); newMonth.setMonth(newMonth.getMonth() - 1); setCalendarMonth(newMonth); }}
+                  className="p-2 text-white hover:bg-slate-700 rounded-lg">←</button>
+                <h3 className="text-white font-medium">{calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h3>
+                <button onClick={() => { const newMonth = new Date(calendarMonth); newMonth.setMonth(newMonth.getMonth() + 1); setCalendarMonth(newMonth); }}
+                  className="p-2 text-white hover:bg-slate-700 rounded-lg">→</button>
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="text-center text-slate-400 text-xs font-medium py-2">{day}</div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1">
+                {getCalendarDays().map((day, idx) => (
+                  <div key={idx} className={`min-h-16 p-1 rounded-lg border ${day.isToday ? 'border-violet-500 bg-violet-500/10' : day.isCurrentMonth ? 'border-slate-700 bg-slate-700/30' : 'border-slate-800 bg-slate-800/20'}`}>
+                    <div className={`text-xs ${day.isCurrentMonth ? 'text-white' : 'text-slate-600'}`}>{day.date.getDate()}</div>
+                    {day.injections.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {day.injections.slice(0, 2).map((inj, i) => (
+                          <div key={i} className="text-[10px] px-1 py-0.5 rounded truncate" style={{ backgroundColor: `${getMedicationColor(inj.type)}40`, color: getMedicationColor(inj.type) }}>
+                            {inj.dose}{inj.unit}
+                          </div>
+                        ))}
+                        {day.injections.length > 2 && <div className="text-[9px] text-slate-400 px-1">+{day.injections.length - 2}</div>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-800 rounded-xl p-4">
+              <h3 className="text-white font-medium mb-3">Adherence Summary</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {schedules.map(schedule => {
+                  const scheduledDays = schedules.filter(s => s.medication === schedule.medication).length;
+                  const actualInjections = injectionEntries.filter(inj => inj.type === schedule.medication && new Date(inj.date).getMonth() === calendarMonth.getMonth()).length;
+                  const expectedInjections = Math.ceil(30 / schedule.frequencyDays);
+                  const adherence = expectedInjections > 0 ? Math.min(100, Math.round((actualInjections / expectedInjections) * 100)) : 0;
+                  return (
+                    <div key={schedule.id} className="bg-slate-700/50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getMedicationColor(schedule.medication) }}></div>
+                        <span className="text-white text-sm font-medium">{schedule.medication}</span>
+                      </div>
+                      <div className="text-2xl font-bold text-white">{adherence}%</div>
+                      <div className="text-xs text-slate-400">{actualInjections} of ~{expectedInjections} this month</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
