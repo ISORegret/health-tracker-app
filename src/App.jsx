@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from 'recharts';
 import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays } from 'lucide-react';
 
 // Comprehensive peptide/medication list with pharmacokinetic data
@@ -901,8 +901,8 @@ const HealthTracker = () => {
             {/* Chart */}
             {(weightEntries.length > 0 || injectionEntries.length > 0) && (
               <div className="bg-slate-800/50 rounded-xl p-4">
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={getSummaryChartData()} margin={{ top: 30, right: 10, left: 10, bottom: 5 }}>
+                <ResponsiveContainer width="100%" height={450}>
+                  <LineChart data={getSummaryChartData()} margin={{ top: 30, right: 5, left: 5, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} interval={Math.max(0, Math.floor(getSummaryChartData().length / 6))} />
                     <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} domain={['dataMin - 2', 'dataMax + 2']} orientation="right" tickFormatter={(v) => `${v} lbs`} />
@@ -941,6 +941,34 @@ const HealthTracker = () => {
         {/* INSIGHTS TAB */}
         {activeTab === 'insights' && (
           <div className="space-y-4">
+            {/* Info Box - How Levels Work */}
+            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Activity className="h-5 w-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="text-cyan-400 font-medium mb-2">Understanding Medication Levels</h3>
+                  <div className="space-y-2 text-sm text-white">
+                    <p><strong>Why levels can be &gt;100%:</strong> When you inject regularly, new doses add to what's still in your system. This is called <span className="text-cyan-400">"steady-state accumulation"</span> and it's exactly how these medications are designed to work!</p>
+                    <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                      <div className="bg-slate-700/50 rounded-lg p-2 text-center">
+                        <div className="text-slate-400">Single Dose</div>
+                        <div className="text-white font-semibold mt-1">0-100%</div>
+                      </div>
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 text-center">
+                        <div className="text-yellow-400">Building Up</div>
+                        <div className="text-white font-semibold mt-1">100-150%</div>
+                      </div>
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2 text-center">
+                        <div className="text-emerald-400">Steady State ✓</div>
+                        <div className="text-white font-semibold mt-1">150-200%</div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">💡 Steady state = optimal therapeutic level with consistent effects and fewer side effects.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {getMedicationInsights().length === 0 ? (
               <div className="bg-slate-800 rounded-xl p-8 text-center">
                 <Activity className="h-16 w-16 mx-auto mb-4 text-slate-600" />
@@ -966,7 +994,14 @@ const HealthTracker = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold text-white">{insight.currentLevel}%</div>
-                        <div className="text-slate-400 text-xs">Current Level</div>
+                        <div className="text-slate-400 text-xs mb-1">Current Level</div>
+                        {parseFloat(insight.currentLevel) > 100 ? (
+                          <div className="text-emerald-400 text-xs font-medium">
+                            ✓ {parseFloat(insight.currentLevel) >= 150 ? 'Steady State' : 'Building Up'}
+                          </div>
+                        ) : (
+                          <div className="text-cyan-400 text-xs">Single Dose Range</div>
+                        )}
                       </div>
                     </div>
 
@@ -990,11 +1025,15 @@ const HealthTracker = () => {
                     {getMedicationLevelChartData(insight.medication).length > 0 && (
                       <div className="mb-4">
                         <h4 className="text-white text-sm font-medium mb-2">Medication Level (Last 14 Days)</h4>
-                        <ResponsiveContainer width="100%" height={150}>
+                        <ResponsiveContainer width="100%" height={180}>
                           <LineChart data={getMedicationLevelChartData(insight.medication)}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                            {/* Reference zones */}
+                            <ReferenceArea y1={0} y2={100} fill="#475569" fillOpacity={0.1} />
+                            <ReferenceArea y1={100} y2={150} fill="#eab308" fillOpacity={0.1} />
+                            <ReferenceArea y1={150} y2={200} fill="#10b981" fillOpacity={0.1} />
                             <XAxis dataKey="date" stroke="#94a3b8" fontSize={9} />
-                            <YAxis stroke="#94a3b8" fontSize={9} tickFormatter={(v) => `${v}%`} />
+                            <YAxis stroke="#94a3b8" fontSize={9} tickFormatter={(v) => `${v}%`} domain={[0, 200]} ticks={[0, 50, 100, 150, 200]} />
                             <Tooltip 
                               contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
                               formatter={(value) => [`${value}%`, 'Level']}
@@ -1002,6 +1041,21 @@ const HealthTracker = () => {
                             <Line type="monotone" dataKey="level" stroke={insight.color} strokeWidth={3} dot={{ fill: insight.color, r: 4 }} />
                           </LineChart>
                         </ResponsiveContainer>
+                        {/* Legend for zones */}
+                        <div className="flex gap-3 mt-2 text-xs justify-center">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-slate-600 rounded"></div>
+                            <span className="text-slate-400">Single Dose</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                            <span className="text-slate-400">Building</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-emerald-500 rounded"></div>
+                            <span className="text-slate-400">Steady State</span>
+                          </div>
+                        </div>
                       </div>
                     )}
 
