@@ -3,12 +3,13 @@ const CACHE_NAME = 'health-tracker-v1';
 const RUNTIME_CACHE = 'health-tracker-runtime';
 
 // Files to cache immediately on install
+// Using relative paths - base URL will be added automatically
 const PRECACHE_URLS = [
-  '/health-tracker-app/',
-  '/health-tracker-app/index.html',
-  '/health-tracker-app/manifest.json',
-  '/health-tracker-app/icon-192.png',
-  '/health-tracker-app/icon-512.png'
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Install event - cache essential files
@@ -76,7 +77,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // If both cache and network fail, return offline page if available
-        return caches.match('/health-tracker-app/index.html');
+        return caches.match('/index.html');
       })
   );
 });
