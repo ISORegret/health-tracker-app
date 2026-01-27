@@ -637,8 +637,18 @@ const HealthTracker = () => {
       const lastInjection = sorted[0];
       const hoursAgo = (now - parseLocalDate(lastInjection.date)) / (1000 * 60 * 60);
       
-      // Calculate current level
-      const currentLevel = calculateMedicationLevel(lastInjection, medication);
+      // Calculate TOTAL current level from ALL recent injections (not just last one)
+      let totalLevel = 0;
+      injections.forEach(inj => {
+        const injDate = parseLocalDate(inj.date);
+        const hoursElapsed = (now - injDate) / (1000 * 60 * 60);
+        if (hoursElapsed >= 0) {
+          const halfLivesElapsed = hoursElapsed / medication.halfLife;
+          const level = Math.pow(0.5, halfLivesElapsed) * 100;
+          if (level > 0.1) totalLevel += level;
+        }
+      });
+      const currentLevel = totalLevel;
       
       // Determine phase
       let phase = 'Declining';
@@ -667,7 +677,7 @@ const HealthTracker = () => {
         medication: medName,
         color: medication.color,
         category: medication.category,
-        currentLevel: currentLevel.toFixed(1),
+        currentLevel: Math.round(currentLevel), // Round to whole number
         phase,
         phaseColor,
         lastInjection: lastInjection.date,
@@ -715,7 +725,7 @@ const HealthTracker = () => {
       
       data.push({
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        level: Math.min(totalLevel, 150).toFixed(1) // Cap at 150% for visualization
+        level: Math.round(totalLevel) // Round to whole number, no cap
       });
     }
     
