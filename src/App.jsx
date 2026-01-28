@@ -815,6 +815,7 @@ const HealthTracker = () => {
   const [weight, setWeight] = useState('');
   const [weightDate, setWeightDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingWeight, setEditingWeight] = useState(null);
+  const [fastingHours, setFastingHours] = useState(''); // Fasting window (e.g., 14 for 14/10)
   
   // Injection form states
   const [injectionType, setInjectionType] = useState('Semaglutide');
@@ -903,7 +904,7 @@ const HealthTracker = () => {
   };
 
   // Form reset functions
-  const resetWeightForm = () => { setWeight(''); setWeightDate(new Date().toISOString().split('T')[0]); setEditingWeight(null); setShowAddForm(false); };
+  const resetWeightForm = () => { setWeight(''); setWeightDate(new Date().toISOString().split('T')[0]); setFastingHours(''); setEditingWeight(null); setShowAddForm(false); };
   const resetInjectionForm = () => { setInjectionType('Semaglutide'); setInjectionDose(''); setInjectionUnit('mg'); setInjectionDate(new Date().toISOString().split('T')[0]); setInjectionSite('Stomach'); setInjectionNotes(''); setSelectedSideEffects([]); setEditingInjection(null); setShowAddForm(false); setShowMedDropdown(false); setMedSearchTerm(''); };
   const resetMeasurementForm = () => { setMeasurementType('Waist'); setMeasurementValue(''); setMeasurementDate(new Date().toISOString().split('T')[0]); setShowAddForm(false); };
   const resetJournalForm = () => { setJournalContent(''); setJournalMood('neutral'); setJournalEnergy(5); setJournalHunger(5); setJournalDate(new Date().toISOString().split('T')[0]); setEditingJournal(null); setShowAddForm(false); };
@@ -911,9 +912,10 @@ const HealthTracker = () => {
   // CRUD operations
   const addOrUpdateWeight = () => {
     if (!weight || isNaN(parseFloat(weight))) return;
+    const fastingValue = fastingHours ? parseInt(fastingHours) : null;
     let updated = editingWeight 
-      ? weightEntries.map(e => e.id === editingWeight.id ? { ...e, weight: parseFloat(weight), date: weightDate } : e)
-      : [...weightEntries, { id: Date.now(), weight: parseFloat(weight), date: weightDate }];
+      ? weightEntries.map(e => e.id === editingWeight.id ? { ...e, weight: parseFloat(weight), date: weightDate, fastingHours: fastingValue } : e)
+      : [...weightEntries, { id: Date.now(), weight: parseFloat(weight), date: weightDate, fastingHours: fastingValue }];
     updated.sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     setWeightEntries(updated);
     saveData('health-weight-entries', updated);
@@ -2235,6 +2237,15 @@ const HealthTracker = () => {
                     <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" placeholder="Enter weight" />
                   </div>
                   <div>
+                    <label className="text-slate-400 text-sm block mb-1">Fasting Window (optional)</label>
+                    <div className="flex gap-2 items-center">
+                      <input type="number" step="1" value={fastingHours} onChange={(e) => setFastingHours(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-4 py-3" placeholder="e.g., 14" />
+                      <span className="text-slate-400 text-sm">/</span>
+                      <input type="number" step="1" value={fastingHours ? 24 - parseInt(fastingHours) : ''} readOnly className="flex-1 bg-slate-700/50 text-slate-400 rounded-lg px-4 py-3" placeholder="e.g., 10" />
+                    </div>
+                    <p className="text-slate-500 text-xs mt-1">Enter fasting hours (e.g., 14 for 14/10 fast)</p>
+                  </div>
+                  <div>
                     <label className="text-slate-400 text-sm block mb-1">Date</label>
                     <input type="date" value={weightDate} onChange={(e) => setWeightDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" />
                   </div>
@@ -2257,12 +2268,17 @@ const HealthTracker = () => {
                       <div className="flex items-center gap-3">
                         <div className="bg-pink-500/20 p-2 rounded-lg"><Scale className="h-5 w-5 text-pink-400" /></div>
                         <div>
-                          <div className="text-white font-medium">{entry.weight} lbs</div>
+                          <div className="text-white font-medium flex items-center gap-2">
+                            {entry.weight} lbs
+                            {entry.fastingHours && (
+                              <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">⏰ {entry.fastingHours}/{24 - entry.fastingHours}</span>
+                            )}
+                          </div>
                           <div className="text-slate-400 text-sm">{parseLocalDate(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
                         </div>
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingWeight(entry); setWeight(entry.weight.toString()); setWeightDate(entry.date); setShowAddForm(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-600 rounded-lg"><Edit2 className="h-4 w-4" /></button>
+                        <button onClick={() => { setEditingWeight(entry); setWeight(entry.weight.toString()); setWeightDate(entry.date); setFastingHours(entry.fastingHours ? entry.fastingHours.toString() : ''); setShowAddForm(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-600 rounded-lg"><Edit2 className="h-4 w-4" /></button>
                         <button onClick={() => deleteWeight(entry.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </div>
