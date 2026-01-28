@@ -815,7 +815,13 @@ const HealthTracker = () => {
   const [weight, setWeight] = useState('');
   const [weightDate, setWeightDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingWeight, setEditingWeight] = useState(null);
-  const [fastingHours, setFastingHours] = useState(''); // Fasting window (e.g., 14 for 14/10)
+  
+  // Fasting window tracker states (separate from weight)
+  const [fastingEntries, setFastingEntries] = useState([]);
+  const [fastingHours, setFastingHours] = useState('');
+  const [fastingDate, setFastingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showFastingForm, setShowFastingForm] = useState(false);
+  const [editingFasting, setEditingFasting] = useState(null);
   
   // Injection form states
   const [injectionType, setInjectionType] = useState('Semaglutide');
@@ -884,6 +890,7 @@ const HealthTracker = () => {
       const scheduleData = localStorage.getItem('health-schedules');
       const titrationData = localStorage.getItem('health-titration');
       const journalData = localStorage.getItem('health-journal');
+      const fastingData = localStorage.getItem('health-fasting-entries');
       
       if (weightData) setWeightEntries(JSON.parse(weightData));
       if (injectionData) setInjectionEntries(JSON.parse(injectionData));
@@ -893,6 +900,7 @@ const HealthTracker = () => {
       if (scheduleData) setSchedules(JSON.parse(scheduleData));
       if (titrationData) setTitrationPlans(JSON.parse(titrationData));
       if (journalData) setJournalEntries(JSON.parse(journalData));
+      if (fastingData) setFastingEntries(JSON.parse(fastingData));
     } catch (error) {
       console.log('Loading data:', error);
     }
@@ -904,18 +912,18 @@ const HealthTracker = () => {
   };
 
   // Form reset functions
-  const resetWeightForm = () => { setWeight(''); setWeightDate(new Date().toISOString().split('T')[0]); setFastingHours(''); setEditingWeight(null); setShowAddForm(false); };
+  const resetWeightForm = () => { setWeight(''); setWeightDate(new Date().toISOString().split('T')[0]); setEditingWeight(null); setShowAddForm(false); };
   const resetInjectionForm = () => { setInjectionType('Semaglutide'); setInjectionDose(''); setInjectionUnit('mg'); setInjectionDate(new Date().toISOString().split('T')[0]); setInjectionSite('Stomach'); setInjectionNotes(''); setSelectedSideEffects([]); setEditingInjection(null); setShowAddForm(false); setShowMedDropdown(false); setMedSearchTerm(''); };
   const resetMeasurementForm = () => { setMeasurementType('Waist'); setMeasurementValue(''); setMeasurementDate(new Date().toISOString().split('T')[0]); setShowAddForm(false); };
   const resetJournalForm = () => { setJournalContent(''); setJournalMood('neutral'); setJournalEnergy(5); setJournalHunger(5); setJournalDate(new Date().toISOString().split('T')[0]); setEditingJournal(null); setShowAddForm(false); };
+  const resetFastingForm = () => { setFastingHours(''); setFastingDate(new Date().toISOString().split('T')[0]); setEditingFasting(null); setShowFastingForm(false); };
 
   // CRUD operations
   const addOrUpdateWeight = () => {
     if (!weight || isNaN(parseFloat(weight))) return;
-    const fastingValue = fastingHours ? parseInt(fastingHours) : null;
     let updated = editingWeight 
-      ? weightEntries.map(e => e.id === editingWeight.id ? { ...e, weight: parseFloat(weight), date: weightDate, fastingHours: fastingValue } : e)
-      : [...weightEntries, { id: Date.now(), weight: parseFloat(weight), date: weightDate, fastingHours: fastingValue }];
+      ? weightEntries.map(e => e.id === editingWeight.id ? { ...e, weight: parseFloat(weight), date: weightDate } : e)
+      : [...weightEntries, { id: Date.now(), weight: parseFloat(weight), date: weightDate }];
     updated.sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     setWeightEntries(updated);
     saveData('health-weight-entries', updated);
@@ -926,6 +934,26 @@ const HealthTracker = () => {
     const updated = weightEntries.filter(e => e.id !== id);
     setWeightEntries(updated);
     saveData('health-weight-entries', updated);
+  };
+
+  // Fasting window CRUD operations
+  const addOrUpdateFasting = () => {
+    if (!fastingHours || isNaN(parseInt(fastingHours))) return;
+    const hours = parseInt(fastingHours);
+    if (hours < 1 || hours > 23) return; // Validate reasonable fasting hours
+    let updated = editingFasting
+      ? fastingEntries.map(e => e.id === editingFasting.id ? { ...e, fastingHours: hours, date: fastingDate } : e)
+      : [...fastingEntries, { id: Date.now(), fastingHours: hours, date: fastingDate }];
+    updated.sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date));
+    setFastingEntries(updated);
+    saveData('health-fasting-entries', updated);
+    resetFastingForm();
+  };
+
+  const deleteFasting = (id) => {
+    const updated = fastingEntries.filter(e => e.id !== id);
+    setFastingEntries(updated);
+    saveData('health-fasting-entries', updated);
   };
 
   const addOrUpdateInjection = () => {
@@ -2237,15 +2265,6 @@ const HealthTracker = () => {
                     <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" placeholder="Enter weight" />
                   </div>
                   <div>
-                    <label className="text-slate-400 text-sm block mb-1">Fasting Window (optional)</label>
-                    <div className="flex gap-2 items-center">
-                      <input type="number" step="1" value={fastingHours} onChange={(e) => setFastingHours(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-4 py-3" placeholder="e.g., 14" />
-                      <span className="text-slate-400 text-sm">/</span>
-                      <input type="number" step="1" value={fastingHours ? 24 - parseInt(fastingHours) : ''} readOnly className="flex-1 bg-slate-700/50 text-slate-400 rounded-lg px-4 py-3" placeholder="e.g., 10" />
-                    </div>
-                    <p className="text-slate-500 text-xs mt-1">Enter fasting hours (e.g., 14 for 14/10 fast)</p>
-                  </div>
-                  <div>
                     <label className="text-slate-400 text-sm block mb-1">Date</label>
                     <input type="date" value={weightDate} onChange={(e) => setWeightDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" />
                   </div>
@@ -2268,23 +2287,185 @@ const HealthTracker = () => {
                       <div className="flex items-center gap-3">
                         <div className="bg-pink-500/20 p-2 rounded-lg"><Scale className="h-5 w-5 text-pink-400" /></div>
                         <div>
-                          <div className="text-white font-medium flex items-center gap-2">
-                            {entry.weight} lbs
-                            {entry.fastingHours && (
-                              <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">⏰ {entry.fastingHours}/{24 - entry.fastingHours}</span>
-                            )}
-                          </div>
+                          <div className="text-white font-medium">{entry.weight} lbs</div>
                           <div className="text-slate-400 text-sm">{parseLocalDate(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
                         </div>
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingWeight(entry); setWeight(entry.weight.toString()); setWeightDate(entry.date); setFastingHours(entry.fastingHours ? entry.fastingHours.toString() : ''); setShowAddForm(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-600 rounded-lg"><Edit2 className="h-4 w-4" /></button>
+                        <button onClick={() => { setEditingWeight(entry); setWeight(entry.weight.toString()); setWeightDate(entry.date); setShowAddForm(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-600 rounded-lg"><Edit2 className="h-4 w-4" /></button>
                         <button onClick={() => deleteWeight(entry.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Fasting Window Tracker - Separate Section */}
+            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-amber-500/20 rounded-lg">
+                    <Clock className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">Fasting Window Tracker</h3>
+                    <p className="text-slate-400 text-xs">Track your daily intermittent fasting</p>
+                  </div>
+                </div>
+                {!showFastingForm && (
+                  <button onClick={() => setShowFastingForm(true)} className="bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-lg">
+                    <Plus className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Fasting Stats Summary */}
+              {fastingEntries.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <div className="text-slate-400 text-xs">Current Streak</div>
+                    <div className="text-2xl font-bold text-amber-400">
+                      {(() => {
+                        const sorted = [...fastingEntries].sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date));
+                        let streak = 0;
+                        const today = new Date();
+                        for (let i = 0; i < sorted.length; i++) {
+                          const entryDate = parseLocalDate(sorted[i].date);
+                          const daysDiff = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+                          if (daysDiff === i) streak++;
+                          else break;
+                        }
+                        return streak;
+                      })()}
+                    </div>
+                    <div className="text-slate-500 text-xs">days</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <div className="text-slate-400 text-xs">Avg Window</div>
+                    <div className="text-2xl font-bold text-amber-400">
+                      {fastingEntries.length > 0 ? Math.round(fastingEntries.reduce((sum, e) => sum + e.fastingHours, 0) / fastingEntries.length) : 0}
+                    </div>
+                    <div className="text-slate-500 text-xs">hours</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <div className="text-slate-400 text-xs">Total Days</div>
+                    <div className="text-2xl font-bold text-amber-400">{fastingEntries.length}</div>
+                    <div className="text-slate-500 text-xs">logged</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Fasting Form */}
+              {showFastingForm && (
+                <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-white font-medium">{editingFasting ? 'Edit Fasting' : 'Log Fasting Window'}</h4>
+                    <button onClick={resetFastingForm} className="text-slate-400 hover:text-white">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-slate-400 text-sm block mb-1">Fasting Window</label>
+                      <div className="flex gap-2 items-center">
+                        <input 
+                          type="number" 
+                          step="1" 
+                          min="1" 
+                          max="23" 
+                          value={fastingHours} 
+                          onChange={(e) => setFastingHours(e.target.value)} 
+                          className="flex-1 bg-slate-700 text-white rounded-lg px-4 py-3 text-center text-2xl font-bold" 
+                          placeholder="14" 
+                        />
+                        <span className="text-slate-400 text-xl">/</span>
+                        <div className="flex-1 bg-slate-700/50 text-slate-400 rounded-lg px-4 py-3 text-center text-2xl font-bold">
+                          {fastingHours ? 24 - parseInt(fastingHours) : '10'}
+                        </div>
+                      </div>
+                      <p className="text-slate-500 text-xs mt-2">
+                        {fastingHours && parseInt(fastingHours) >= 1 && parseInt(fastingHours) <= 23 ? (
+                          <>Fast for {fastingHours} hours, eat for {24 - parseInt(fastingHours)} hours</>
+                        ) : (
+                          'Enter fasting hours (e.g., 14 for 14/10 fast, 16 for 16/8 fast)'
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-sm block mb-1">Date</label>
+                      <input 
+                        type="date" 
+                        value={fastingDate} 
+                        onChange={(e) => setFastingDate(e.target.value)} 
+                        className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" 
+                      />
+                    </div>
+                    <button 
+                      onClick={addOrUpdateFasting} 
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 rounded-lg"
+                    >
+                      {editingFasting ? 'Update' : 'Log Fasting'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Fasting History */}
+              <div>
+                <h4 className="text-white font-medium mb-2 text-sm">Fasting History</h4>
+                {fastingEntries.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">
+                    <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No fasting entries yet</p>
+                    <p className="text-xs mt-1">Start tracking your intermittent fasting!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {[...fastingEntries].sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date)).map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between bg-slate-800/50 rounded-lg p-3 group">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-amber-500/20 p-2 rounded-lg">
+                            <Clock className="h-5 w-5 text-amber-400" />
+                          </div>
+                          <div>
+                            <div className="text-white font-medium flex items-center gap-2">
+                              <span className="text-2xl">{entry.fastingHours}</span>
+                              <span className="text-slate-400">/</span>
+                              <span className="text-slate-400 text-xl">{24 - entry.fastingHours}</span>
+                              <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded ml-1">
+                                {entry.fastingHours}/{24 - entry.fastingHours}
+                              </span>
+                            </div>
+                            <div className="text-slate-400 text-sm">
+                              {parseLocalDate(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => { 
+                              setEditingFasting(entry); 
+                              setFastingHours(entry.fastingHours.toString()); 
+                              setFastingDate(entry.date); 
+                              setShowFastingForm(true); 
+                            }} 
+                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => deleteFasting(entry.id)} 
+                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
