@@ -1914,6 +1914,90 @@ const HealthTracker = () => {
                       )}
                     </div>
 
+                    {/* Next Injection Recommendation */}
+                    {insight.nextInjection && (() => {
+                      const now = new Date();
+                      const nextDate = new Date(insight.nextInjection);
+                      const daysUntil = Math.ceil((nextDate - now) / (1000 * 60 * 60 * 24));
+                      const hoursUntil = Math.ceil((nextDate - now) / (1000 * 60 * 60));
+                      
+                      // Determine urgency based on phase and days remaining
+                      let urgencyLevel = 'good'; // green
+                      let urgencyColor = 'bg-emerald-500/10 border-emerald-500/30';
+                      let urgencyTextColor = 'text-emerald-400';
+                      let urgencyIcon = '✓';
+                      let urgencyMessage = '';
+                      
+                      if (daysUntil <= 0) {
+                        // Overdue or today
+                        urgencyLevel = 'critical';
+                        urgencyColor = 'bg-red-500/10 border-red-500/30';
+                        urgencyTextColor = 'text-red-400';
+                        urgencyIcon = '⚠️';
+                        urgencyMessage = daysUntil === 0 ? 'Inject TODAY' : `OVERDUE by ${Math.abs(daysUntil)} day${Math.abs(daysUntil) > 1 ? 's' : ''}`;
+                      } else if (daysUntil === 1 || (insight.phase === 'Trough' || insight.phase === 'Declining')) {
+                        // Tomorrow or in declining/trough phase
+                        urgencyLevel = 'soon';
+                        urgencyColor = 'bg-yellow-500/10 border-yellow-500/30';
+                        urgencyTextColor = 'text-yellow-400';
+                        urgencyIcon = '📅';
+                        urgencyMessage = daysUntil === 1 ? 'Inject TOMORROW' : `Plan injection in ${daysUntil} days`;
+                      } else if (daysUntil <= 3) {
+                        // 2-3 days away
+                        urgencyLevel = 'plan';
+                        urgencyColor = 'bg-cyan-500/10 border-cyan-500/30';
+                        urgencyTextColor = 'text-cyan-400';
+                        urgencyIcon = '📝';
+                        urgencyMessage = `Plan injection in ${daysUntil} days`;
+                      } else {
+                        // 4+ days away
+                        urgencyLevel = 'good';
+                        urgencyColor = 'bg-emerald-500/10 border-emerald-500/30';
+                        urgencyTextColor = 'text-emerald-400';
+                        urgencyIcon = '✓';
+                        urgencyMessage = `Next injection in ${daysUntil} days`;
+                      }
+                      
+                      return (
+                        <div className={`${urgencyColor} border rounded-lg p-3 mt-3`}>
+                          <div className="flex items-start gap-2">
+                            <span className="text-xl">{urgencyIcon}</span>
+                            <div className="flex-1">
+                              <h5 className={`${urgencyTextColor} text-sm font-semibold mb-1`}>
+                                {urgencyMessage}
+                              </h5>
+                              <div className="text-xs text-slate-300 space-y-1">
+                                {urgencyLevel === 'critical' && (
+                                  <>
+                                    <p>You're in {insight.phase} phase. Inject as soon as possible to maintain therapeutic levels.</p>
+                                    <p className="font-medium">Consistent timing = better results!</p>
+                                  </>
+                                )}
+                                {urgencyLevel === 'soon' && (
+                                  <>
+                                    <p>You're in {insight.phase} phase. Medication levels are declining.</p>
+                                    <p>Inject within the next {daysUntil <= 1 ? '24 hours' : `${daysUntil} days`} to maintain steady state.</p>
+                                  </>
+                                )}
+                                {urgencyLevel === 'plan' && (
+                                  <>
+                                    <p>Currently in {insight.phase} phase. Medication still highly effective.</p>
+                                    <p>Mark your calendar for {nextDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}.</p>
+                                  </>
+                                )}
+                                {urgencyLevel === 'good' && (
+                                  <>
+                                    <p>You're in {insight.phase} phase. Optimal therapeutic range.</p>
+                                    <p>Next dose scheduled for {nextDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}.</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Medication-Specific Insights */}
                     <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 mt-3">
                       <h5 className="text-cyan-400 text-xs font-medium mb-2 flex items-center gap-1">
