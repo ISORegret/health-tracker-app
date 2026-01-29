@@ -15,8 +15,7 @@
   "lang": "en-US",
   "dir": "ltr",
   "categories": ["health", "lifestyle", "medical"],
-  "icons": [...]
-}
+  "icons": [
     {
       "src": "/health-tracker-app/icon-192.png",
       "sizes": "192x192",
