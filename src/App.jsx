@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+kimport React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from 'recharts';
 import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays } from 'lucide-react';
 
@@ -793,7 +793,7 @@ const parseLocalDate = (dateString) => {
   return new Date(year, month - 1, day);
 };
 
-const HealthTracker = () => {
+const PepTalk = () => {
   const [activeTab, setActiveTab] = useState('summary');
   const [weightEntries, setWeightEntries] = useState([]);
   const [injectionEntries, setInjectionEntries] = useState([]);
