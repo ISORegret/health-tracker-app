@@ -10,6 +10,7 @@
   "orientation": "portrait-primary",
   "background_color": "#0f172a",
   "theme_color": "#8b5cf6",
+  "prefer_related_applications": false, 
   "lang": "en-US",
   "dir": "ltr",
   "categories": ["health", "lifestyle", "medical"],
