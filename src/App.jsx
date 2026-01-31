@@ -1424,30 +1424,72 @@ const PepTalk = () => {
   };
 
   // Export all data to JSON file
-  const exportData = () => {
-    const allData = {
-      exportDate: new Date().toISOString(),
-      version: '1.0',
-      weightEntries,
-      injectionEntries,
-      measurementEntries,
-      progressPhotos,
-      schedules,
-      titrationPlans,
-      journalEntries,
-      userProfile
-    };
-    
-    const dataStr = JSON.stringify(allData, null, 2);
+  const exportData = async () => {
+    try {
+      const allData = {
+        exportDate: new Date().toISOString(),
+        version: '1.0',
+        weightEntries,
+        injectionEntries,
+        measurementEntries,
+        progressPhotos,
+        schedules,
+        titrationPlans,
+        journalEntries,
+        userProfile
+      };
+      
+      const dataStr = JSON.stringify(allData, null, 2);
+      const filename = `health-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+      
+      // For native platforms, use Capacitor Filesystem and Share
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { Filesystem, Directory } = await import('@capacitor/filesystem');
+          const { Share } = await import('@capacitor/share');
+          
+          // Write file to cache directory
+          const result = await Filesystem.writeFile({
+            path: filename,
+            data: dataStr,
+            directory: Directory.Cache,
+            encoding: 'utf8'
+          });
+          
+          // Share the file so user can save/send it
+          await Share.share({
+            title: 'PepTalk Backup',
+            text: 'Your PepTalk data backup',
+            url: result.uri,
+            dialogTitle: 'Save or share your backup'
+          });
+        } catch (nativeError) {
+          console.error('Native export failed:', nativeError);
+          // Fall back to web download if native fails
+          downloadViaLink(dataStr, filename);
+        }
+      } else {
+        // Web browser download
+        downloadViaLink(dataStr, filename);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  };
+  
+  // Helper function for web download
+  const downloadViaLink = (dataStr, filename) => {
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `health-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Delay revoking the URL to ensure download starts
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // Import data from JSON file
