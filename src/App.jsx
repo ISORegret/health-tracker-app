@@ -1857,14 +1857,14 @@ const wipeAllData = () => {
 
   if (isLoading || showSplash) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900/20 to-slate-900 flex items-center justify-center overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center overflow-hidden">
         <div className="text-center animate-fade-in">
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full animate-pulse"></div>
+            <div className="absolute inset-0 bg-violet-500/25 blur-3xl rounded-full animate-pulse"></div>
             <Activity className="h-24 w-24 text-violet-400 mx-auto relative animate-float" strokeWidth={1.5} />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">PepTalk</h1>
-          <p className="text-violet-400 text-sm animate-pulse">Loading your data...</p>
+          <p className="text-violet-400 text-sm font-medium animate-pulse">Loading your data...</p>
         </div>
         <style>{`
           @keyframes fade-in {
@@ -1883,7 +1883,7 @@ const wipeAllData = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 pb-24 transition-all duration-300">
+    <div className="min-h-screen p-4 pb-24 transition-all duration-300">
       {/* Success Celebration Popup */}
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -1900,13 +1900,13 @@ const wipeAllData = () => {
       className="absolute inset-0 bg-black/60"
       onClick={() => { setShowWipeConfirm(false); setWipeConfirmChecked(false); }}
     />
-    <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6">
+    <div className="relative w-full max-w-md rounded-2xl border border-white/[0.08] shadow-2xl p-6 bg-slate-900/95 backdrop-blur-xl">
       <h3 className="text-white text-xl font-semibold mb-2">Reset PepTalk?</h3>
       <p className="text-slate-300 text-sm mb-4">
         This permanently deletes all weight, injections, measurements, photos, schedules, and journal entries on this device.
       </p>
 
-      <label className="flex items-start gap-3 bg-slate-800/70 border border-slate-700 rounded-xl p-3 mb-4 cursor-pointer">
+      <label className="flex items-start gap-3 rounded-xl p-3 mb-4 cursor-pointer border border-white/[0.06] bg-slate-800/70">
         <input
           type="checkbox"
           checked={wipeConfirmChecked}
@@ -1921,7 +1921,7 @@ const wipeAllData = () => {
       <div className="flex gap-3">
         <button
           onClick={() => { setShowWipeConfirm(false); setWipeConfirmChecked(false); }}
-          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 rounded-xl"
+          className="flex-1 bg-slate-700/80 hover:bg-slate-600 text-white font-medium py-3 rounded-xl transition-colors"
         >
           Cancel
         </button>
@@ -2033,16 +2033,16 @@ const wipeAllData = () => {
       `}</style>
       
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white mb-1">PepTalk</h1>
-          <p className="text-slate-400 text-sm">Weight • Injections • Measurements • Tools</p>
-        </div>
+        <header className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-white tracking-tight mb-0.5">PepTalk</h1>
+          <p className="text-slate-400 text-sm font-medium">Weight · Injections · Measurements · Tools</p>
+        </header>
 
         {/* Upcoming Injections Alert - Shows ALL overdue/due medications with dismiss */}
         {upcomingInjections
           .filter(inj => (inj.isDueToday || inj.isOverdue) && !dismissedAlerts.includes(`${inj.medication}-${inj.daysUntil}`))
           .map((injection, idx) => (
-          <div key={injection.medication} className={`alert-enter mb-4 p-3 rounded-xl flex items-center gap-3 shadow-lg ${injection.isOverdue ? 'bg-red-500/20 border border-red-500/50 shadow-red-500/20' : 'bg-amber-500/20 border border-amber-500/50 shadow-amber-500/20'}`}>
+          <div key={injection.medication} className={`alert-enter mb-4 p-4 rounded-2xl flex items-center gap-3 border ${injection.isOverdue ? 'bg-red-500/15 border-red-500/40 backdrop-blur-sm' : 'bg-amber-500/15 border-amber-500/40 backdrop-blur-sm'}`}>
             <Bell className={`h-5 w-5 ${injection.isOverdue ? 'text-red-400' : 'text-amber-400'}`} />
             <div className="flex-1">
               <div className={`font-medium ${injection.isOverdue ? 'text-red-400' : 'text-amber-400'}`}>
@@ -2055,15 +2055,15 @@ const wipeAllData = () => {
             </div>
             <button
               onClick={() => setDismissedAlerts([...dismissedAlerts, `${injection.medication}-${injection.daysUntil}`])}
-              className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/5 rounded-lg transition-colors"
             >
               <X className={`h-4 w-4 ${injection.isOverdue ? 'text-red-400' : 'text-amber-400'}`} />
             </button>
           </div>
         ))}
 
-        {/* Tab Navigation */}
-        <div className="flex bg-slate-800 rounded-xl p-1 mb-6 overflow-x-auto">
+        {/* Tab Navigation - modern pill bar */}
+        <div className="flex rounded-2xl p-1.5 mb-6 overflow-x-auto border border-white/[0.06] shadow-card bg-slate-800/60 backdrop-blur-xl">
           {[
             { id: 'summary', icon: LayoutDashboard, label: 'Summary' },
             { id: 'insights', icon: Activity, label: 'Insights' },
@@ -2075,7 +2075,7 @@ const wipeAllData = () => {
             { id: 'tools', icon: Wrench, label: 'Tools' }
           ].map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setShowAddForm(false); }}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-lg font-medium transition-all text-xs whitespace-nowrap ${activeTab === tab.id ? 'bg-violet-500 text-white' : 'text-slate-400 hover:text-white'}`}>
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl font-medium transition-all duration-200 text-xs whitespace-nowrap ${activeTab === tab.id ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}>
               <tab.icon className="h-4 w-4" />{tab.label}
             </button>
           ))}
@@ -2085,7 +2085,7 @@ const wipeAllData = () => {
         {activeTab === 'summary' && (
           <div className="space-y-4 tab-enter">
             {/* Time Range Selector */}
-            <div className="flex justify-between items-center bg-slate-800/50 rounded-xl p-1">
+            <div className="flex justify-between items-center rounded-2xl p-1.5 border border-white/[0.06] bg-slate-800/50 backdrop-blur-sm">
               {[{ id: '1m', label: '1 month' }, { id: '3m', label: '3 months' }, { id: '6m', label: '6 months' }, { id: '12m', label: '12 months' }, { id: 'all', label: 'All Time' }].map(range => (
                 <button key={range.id} onClick={() => setTimeRange(range.id)}
                   className={`flex-1 py-2 px-1 text-xs font-medium rounded-lg transition-all ${timeRange === range.id ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-white'}`}>
@@ -2101,38 +2101,38 @@ const wipeAllData = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-slate-800/80 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs mb-1"><Scale className="h-3 w-3" />Total change</div>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm transition-shadow hover:shadow-card">
+                <div className="flex items-center gap-2 text-cyan-400 text-xs font-medium mb-1"><Scale className="h-3 w-3" />Total change</div>
                 <div className={`text-xl font-bold ${parseFloat(stats.change) < 0 ? 'text-emerald-400' : parseFloat(stats.change) > 0 ? 'text-red-400' : 'text-white'}`}>{stats.change}<span className="text-sm font-normal text-slate-400">lbs</span></div>
               </div>
-              <div className="bg-slate-800/80 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs mb-1"><Activity className="h-3 w-3" />Current BMI</div>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm transition-shadow hover:shadow-card">
+                <div className="flex items-center gap-2 text-cyan-400 text-xs font-medium mb-1"><Activity className="h-3 w-3" />Current BMI</div>
                 <div className={`text-xl font-bold ${bmiCategory.color}`}>{stats.bmi || '-'}</div>
               </div>
-              <div className="bg-slate-800/80 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs mb-1"><Scale className="h-3 w-3" />Weight</div>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm transition-shadow hover:shadow-card">
+                <div className="flex items-center gap-2 text-cyan-400 text-xs font-medium mb-1"><Scale className="h-3 w-3" />Weight</div>
                 <div className="text-xl font-bold text-white">{stats.current}<span className="text-sm font-normal text-slate-400">lbs</span></div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-slate-800/80 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs mb-1"><TrendingDown className="h-3 w-3" />Percent</div>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm transition-shadow hover:shadow-card">
+                <div className="flex items-center gap-2 text-cyan-400 text-xs font-medium mb-1"><TrendingDown className="h-3 w-3" />Percent</div>
                 <div className={`text-xl font-bold ${parseFloat(stats.percentChange) < 0 ? 'text-emerald-400' : parseFloat(stats.percentChange) > 0 ? 'text-red-400' : 'text-white'}`}>{stats.percentChange}<span className="text-sm font-normal text-slate-400">%</span></div>
               </div>
-              <div className="bg-slate-800/80 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs mb-1"><Calendar className="h-3 w-3" />Weekly avg</div>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm transition-shadow hover:shadow-card">
+                <div className="flex items-center gap-2 text-cyan-400 text-xs font-medium mb-1"><Calendar className="h-3 w-3" />Weekly avg</div>
                 <div className={`text-xl font-bold ${parseFloat(stats.weeklyAvg) < 0 ? 'text-emerald-400' : parseFloat(stats.weeklyAvg) > 0 ? 'text-red-400' : 'text-white'}`}>{stats.weeklyAvg}<span className="text-sm font-normal text-slate-400">lbs/wk</span></div>
               </div>
-              <div className="bg-slate-800/80 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs mb-1"><Target className="h-3 w-3" />To goal</div>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm transition-shadow hover:shadow-card">
+                <div className="flex items-center gap-2 text-cyan-400 text-xs font-medium mb-1"><Target className="h-3 w-3" />To goal</div>
                 <div className="text-xl font-bold text-white">{stats.toGoal}<span className="text-sm font-normal text-slate-400">lbs</span></div>
               </div>
             </div>
 
             {/* Estimated Goal Date */}
             {stats.estimatedGoalDate && (
-              <div className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-emerald-500/25 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
                   <div className="bg-emerald-500/30 p-2 rounded-lg"><Target className="h-5 w-5 text-emerald-400" /></div>
                   <div>
@@ -2146,11 +2146,11 @@ const wipeAllData = () => {
 
             {/* Upcoming Injections */}
             {upcomingInjections.length > 0 && (
-              <div className="bg-slate-800 rounded-xl p-4">
-                <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Bell className="h-4 w-4 text-cyan-400" />Upcoming Injections</h3>
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Bell className="h-4 w-4 text-cyan-400" />Upcoming Injections</h3>
                 <div className="space-y-2">
                   {upcomingInjections.slice(0, 3).map((inj, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-slate-700/50 rounded-lg p-3">
+                    <div key={idx} className="flex items-center justify-between rounded-xl p-3 border border-white/[0.04] bg-slate-700/40">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg" style={{ backgroundColor: `${getMedicationColor(inj.medication)}20` }}>
                           <Syringe className="h-4 w-4" style={{ color: getMedicationColor(inj.medication) }} />
@@ -2198,7 +2198,7 @@ const wipeAllData = () => {
                   const isAhead = lastDose > recommendedDose;
                   
                   return (
-                    <div key={plan.id} className="bg-slate-800/50 rounded-lg p-3 mb-2">
+                    <div key={plan.id} className="rounded-xl p-3 mb-2 border border-white/[0.04] bg-slate-800/50">
                       <div className="text-white font-medium mb-3">{plan.medication}</div>
                       
                       <div className="grid grid-cols-2 gap-3 mb-3">
@@ -2262,13 +2262,13 @@ const wipeAllData = () => {
 
             {/* Titration Progress */}
             {titrationPlans.length > 0 && (
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <h3 className="text-white font-medium mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-violet-400" />Titration Progress</h3>
                 {titrationPlans.map(plan => {
                   const current = getCurrentTitrationDose(plan);
                   if (!current) return null;
                   return (
-                    <div key={plan.id} className="bg-slate-700/50 rounded-lg p-3 mb-2">
+                    <div key={plan.id} className="rounded-xl p-3 mb-2 border border-white/[0.04] bg-slate-700/40">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-white font-medium">{plan.medication}</span>
                         {current.completed && <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">Complete</span>}
@@ -2288,12 +2288,12 @@ const wipeAllData = () => {
             )}
 
             {/* Goal Weight Setting */}
-            <div className="bg-slate-800/50 rounded-xl p-3">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/50 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400 text-sm">Goal Weight</span>
                 <div className="flex items-center gap-2">
                   <input type="number" value={userProfile.goalWeight || 200} onChange={(e) => { const p = { ...userProfile, goalWeight: parseFloat(e.target.value) }; setUserProfile(p); saveData('health-user-profile', p); }}
-                    className="w-20 bg-slate-700 text-white rounded px-2 py-1 text-center text-sm" />
+                    className="w-20 bg-slate-700/80 border border-white/[0.06] text-white rounded-xl px-2 py-1 text-center text-sm" />
                   <span className="text-slate-400 text-sm">lbs</span>
                 </div>
               </div>
@@ -2301,7 +2301,7 @@ const wipeAllData = () => {
 
             {/* Chart */}
             {(weightEntries.length > 0 || injectionEntries.length > 0) && (
-              <div className="bg-slate-800/50 rounded-xl p-1">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/50 backdrop-blur-sm">
                 <ResponsiveContainer width="100%" height={450}>
                   <LineChart data={getSummaryChartData()} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -2312,7 +2312,7 @@ const wipeAllData = () => {
                       const maxDose = Math.ceil(dataMax);
                       return maxDose + 3;
                     }]} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }} 
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', backdropFilter: 'blur(12px)' }} 
                       formatter={(value, name, props) => { 
                         if (!value) return null; 
                         if (name === 'Weight') return [`${value} lbs`, 'Weight'];
@@ -2371,7 +2371,7 @@ const wipeAllData = () => {
         {activeTab === 'insights' && (
           <div className="space-y-4 tab-enter">
             {/* Info Box - How Levels Work */}
-            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-cyan-500/25 bg-cyan-500/10 backdrop-blur-sm">
               <div className="flex items-start gap-3">
                 <Activity className="h-5 w-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                 <div>
@@ -2399,11 +2399,11 @@ const wipeAllData = () => {
             </div>
 
             {getMedicationInsights().length === 0 ? (
-              <div className="bg-slate-800 rounded-xl p-8 text-center">
-                <Activity className="h-16 w-16 mx-auto mb-4 text-slate-600" />
-                <h3 className="text-white font-medium text-lg mb-2">No Recent Injections</h3>
-                <p className="text-slate-400 mb-4">Log an injection to see your medication levels and insights</p>
-                <button onClick={() => setActiveTab('injections')} className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-lg font-medium">
+              <div className="rounded-2xl p-10 text-center border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
+                <Activity className="h-16 w-16 mx-auto mb-4 text-slate-500" />
+                <h3 className="text-white font-semibold text-lg mb-2">No Recent Injections</h3>
+                <p className="text-slate-400 mb-6">Log an injection to see your medication levels and insights</p>
+                <button onClick={() => setActiveTab('injections')} className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-violet-500/25 transition-all">
                   Log Injection
                 </button>
               </div>
@@ -2411,7 +2411,7 @@ const wipeAllData = () => {
               <>
                 {/* Active Medications Overview */}
                 {getMedicationInsights().map(insight => (
-                  <div key={insight.medication} className="bg-slate-800 rounded-xl p-4">
+                  <div key={insight.medication} className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                     {/* Header */}
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -2464,7 +2464,7 @@ const wipeAllData = () => {
                             <XAxis dataKey="date" stroke="#94a3b8" fontSize={9} />
                             <YAxis stroke="#94a3b8" fontSize={9} tickFormatter={(v) => `${v}%`} domain={[0, 200]} ticks={[0, 50, 100, 150, 200]} />
                             <Tooltip 
-                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                              contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', backdropFilter: 'blur(12px)' }}
                               formatter={(value) => [`${value}%`, 'Level']}
                             />
                             <Line type="monotone" dataKey="level" stroke={insight.color} strokeWidth={3} dot={{ fill: insight.color, r: 4 }} />
@@ -2748,7 +2748,7 @@ const wipeAllData = () => {
         {/* WEIGHT TAB */}
         {activeTab === 'weight' && (
           <div className="space-y-4 tab-enter">
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400 text-sm">Your Height (for BMI)</span>
                 <div className="flex items-center gap-2">
@@ -2760,11 +2760,11 @@ const wipeAllData = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="text-slate-400 text-sm mb-1">Current Weight</div>
                 <div className="text-2xl font-bold text-white">{stats.current} <span className="text-sm text-slate-400">lbs</span></div>
               </div>
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="text-slate-400 text-sm mb-1">BMI</div>
                 <div className={`text-2xl font-bold ${bmiCategory.color}`}>{stats.bmi || '-'}</div>
                 <div className={`text-xs ${bmiCategory.color}`}>{bmiCategory.label}</div>
@@ -2772,7 +2772,7 @@ const wipeAllData = () => {
             </div>
 
             {showAddForm && (
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-white font-medium">{editingWeight ? 'Edit Entry' : 'Add Weight'}</h3>
                   <button onClick={resetWeightForm} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
@@ -2791,7 +2791,7 @@ const wipeAllData = () => {
               </div>
             )}
 
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-medium">History</h3>
                 {!showAddForm && <button onClick={() => setShowAddForm(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-lg"><Plus className="h-5 w-5" /></button>}
@@ -3023,7 +3023,7 @@ const wipeAllData = () => {
             </div>
 
             {showAddForm && (
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-white font-medium">{editingInjection ? 'Edit Injection' : 'Log Injection'}</h3>
                   <button onClick={resetInjectionForm} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
@@ -3081,7 +3081,7 @@ const wipeAllData = () => {
               </div>
             )}
 
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-medium">History</h3>
                 {!showAddForm && <button onClick={() => setShowAddForm(true)} className="bg-violet-500 hover:bg-violet-600 text-white p-2 rounded-lg"><Plus className="h-5 w-5" /></button>}
@@ -3122,7 +3122,7 @@ const wipeAllData = () => {
             {Object.keys(measurementStats).length > 0 && (
               <div className="grid grid-cols-2 gap-3">
                 {Object.entries(measurementStats).map(([type, data]) => (
-                  <div key={type} className="bg-slate-800 rounded-xl p-3">
+                  <div key={type} className="rounded-2xl p-3 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                     <div className="text-slate-400 text-xs">{type}</div>
                     <div className="text-xl font-bold text-white">{data.current}"</div>
                     <div className={`text-xs ${parseFloat(data.change) < 0 ? 'text-emerald-400' : parseFloat(data.change) > 0 ? 'text-red-400' : 'text-slate-400'}`}>
@@ -3142,7 +3142,7 @@ const wipeAllData = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
                     <YAxis stroke="#94a3b8" fontSize={10} unit='"' />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', backdropFilter: 'blur(12px)' }} />
                     <Legend wrapperStyle={{ fontSize: '10px' }} />
                     {MEASUREMENT_TYPES.map((type, idx) => {
                       const colors = ['#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#a855f7', '#14b8a6', '#f97316'];
@@ -3155,7 +3155,7 @@ const wipeAllData = () => {
 
             {/* Add Measurement Form */}
             {showAddForm && (
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-white font-medium">Add Measurement</h3>
                   <button onClick={resetMeasurementForm} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
@@ -3181,7 +3181,7 @@ const wipeAllData = () => {
             )}
 
             {/* Progress Photos */}
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-medium flex items-center gap-2"><Camera className="h-4 w-4 text-cyan-400" />Progress Photos</h3>
                 <button onClick={() => photoInputRef.current?.click()} className="bg-cyan-500 hover:bg-cyan-600 text-white p-2 rounded-lg"><Plus className="h-5 w-5" /></button>
@@ -3217,7 +3217,7 @@ const wipeAllData = () => {
             </div>
 
             {/* Measurement History */}
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-medium">Measurement History</h3>
                 {!showAddForm && <button onClick={() => setShowAddForm(true)} className="bg-cyan-500 hover:bg-cyan-600 text-white p-2 rounded-lg"><Plus className="h-5 w-5" /></button>}
@@ -3266,7 +3266,7 @@ const wipeAllData = () => {
             {/* Calculators Section */}
             {activeToolSection === 'calculator' && (
               <>
-                <div className="bg-slate-800 rounded-xl p-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                   <h3 className="text-white font-medium mb-4 flex items-center gap-2"><Calculator className="h-5 w-5 text-violet-400" />Dose Calculator</h3>
                   <div className="space-y-3">
                     <div>
@@ -3291,7 +3291,7 @@ const wipeAllData = () => {
                   </div>
                 </div>
 
-                <div className="bg-slate-800 rounded-xl p-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                   <h3 className="text-white font-medium mb-4 flex items-center gap-2"><Activity className="h-5 w-5 text-emerald-400" />Reconstitution Calculator</h3>
                   <div className="space-y-3">
                     <div>
@@ -3329,7 +3329,7 @@ const wipeAllData = () => {
             {/* Schedules Section */}
             {activeToolSection === 'schedule' && (
               <div className="space-y-4">
-                <div className="bg-slate-800 rounded-xl p-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                   <h3 className="text-white font-medium mb-4 flex items-center gap-2"><Bell className="h-5 w-5 text-amber-400" />Add Injection Schedule</h3>
                   <div className="space-y-3">
                     <div>
@@ -3412,7 +3412,7 @@ const wipeAllData = () => {
                 </div>
 
                 {schedules.length > 0 && (
-                  <div className="bg-slate-800 rounded-xl p-4">
+                  <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                     <h3 className="text-white font-medium mb-3">Active Schedules</h3>
                     <div className="space-y-2">
                       {schedules.map(schedule => (
@@ -3495,7 +3495,7 @@ const wipeAllData = () => {
                   </div>
                 </div>
 
-                <div className="bg-slate-800 rounded-xl p-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                   <h3 className="text-white font-medium mb-4 flex items-center gap-2"><TrendingUp className="h-5 w-5 text-violet-400" />Create Titration Plan</h3>
                   <div className="space-y-3">
                     <div>
@@ -3525,12 +3525,12 @@ const wipeAllData = () => {
                 </div>
 
                 {titrationPlans.length > 0 && (
-                  <div className="bg-slate-800 rounded-xl p-4">
+                  <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                     <h3 className="text-white font-medium mb-3">Active Titration Plans</h3>
                     {titrationPlans.map(plan => {
                       const current = getCurrentTitrationDose(plan);
                       return (
-                        <div key={plan.id} className="bg-slate-700/50 rounded-lg p-3 mb-2">
+                        <div key={plan.id} className="rounded-xl p-3 mb-2 border border-white/[0.04] bg-slate-700/40">
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="text-white font-medium">{plan.medication}</div>
@@ -3556,7 +3556,7 @@ const wipeAllData = () => {
             {/* Notifications Section */}
             {activeToolSection === 'notifications' && (
               <div className="space-y-4">
-                <div className="bg-slate-800 rounded-xl p-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                   <h3 className="text-white font-medium mb-4 flex items-center gap-2">
                     <Bell className="h-5 w-5 text-amber-400" />
                     Push Notifications
@@ -3597,7 +3597,7 @@ const wipeAllData = () => {
                   {notificationPermission === 'granted' && (
                     <div className="space-y-4">
                       {/* Injection Reminders */}
-                      <div className="bg-slate-700/50 rounded-lg p-4">
+                      <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <div className="text-white font-medium">Injection Reminders</div>
@@ -3629,7 +3629,7 @@ const wipeAllData = () => {
                       </div>
 
                       {/* Overdue Alerts */}
-                      <div className="bg-slate-700/50 rounded-lg p-4">
+                      <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-white font-medium">Overdue Alerts</div>
@@ -3649,7 +3649,7 @@ const wipeAllData = () => {
                       </div>
 
                       {/* Weight Log Reminders */}
-                      <div className="bg-slate-700/50 rounded-lg p-4">
+                      <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <div className="text-white font-medium">Weight Log Reminders</div>
@@ -3700,7 +3700,7 @@ const wipeAllData = () => {
             {/* Data Management Section */}
             {activeToolSection === 'data' && (
               <div className="space-y-4">
-                <div className="bg-slate-800 rounded-xl p-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                   <h3 className="text-white font-medium mb-4 flex items-center gap-2">
                     <Activity className="h-5 w-5 text-cyan-400" />
                     Export & Import Data
@@ -3708,7 +3708,7 @@ const wipeAllData = () => {
                   
                   <div className="space-y-4">
                     {/* Export Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-4">
+                    <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                       <h4 className="text-white font-medium mb-2">Export Data</h4>
                       <p className="text-slate-400 text-sm mb-3">
                         Download all your data as a backup file. Use this to:
@@ -3725,7 +3725,7 @@ const wipeAllData = () => {
                     </div>
 
                     {/* Import Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-4">
+                    <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                       <h4 className="text-white font-medium mb-2">Import Data</h4>
                       <p className="text-slate-400 text-sm mb-3">
                         Restore data from a backup file.
@@ -3756,7 +3756,7 @@ const wipeAllData = () => {
   </button>
 </div>
                     {/* Data Summary */}
-                    <div className="bg-slate-700/50 rounded-lg p-4">
+                    <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                       <h4 className="text-white font-medium mb-3">Current Data Summary</h4>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div className="flex justify-between">
@@ -3791,7 +3791,7 @@ const wipeAllData = () => {
             )}
 
             {/* Quick Reference */}
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <h3 className="text-white font-medium mb-3">Quick Reference</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-400"><span>1 mL</span><span className="text-white">= 100 units</span></div>
@@ -3807,7 +3807,7 @@ const wipeAllData = () => {
         {activeTab === 'journal' && (
           <div className="space-y-4">
             {showAddForm && (
-              <div className="bg-slate-800 rounded-xl p-4">
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-white font-medium">{editingJournal ? 'Edit Entry' : 'New Journal Entry'}</h3>
                   <button onClick={resetJournalForm} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
@@ -3855,7 +3855,7 @@ const wipeAllData = () => {
               </div>
             )}
 
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-medium flex items-center gap-2"><BookOpen className="h-4 w-4 text-violet-400" />Journal Entries</h3>
                 {!showAddForm && <button onClick={() => setShowAddForm(true)} className="bg-violet-500 hover:bg-violet-600 text-white p-2 rounded-lg"><Plus className="h-5 w-5" /></button>}
@@ -3915,7 +3915,7 @@ const wipeAllData = () => {
         {/* CALENDAR TAB */}
         {activeTab === 'calendar' && (
           <div className="space-y-4">
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-4">
                 <button onClick={() => { const newMonth = new Date(calendarMonth); newMonth.setMonth(newMonth.getMonth() - 1); setCalendarMonth(newMonth); }}
                   className="p-2 text-white hover:bg-slate-700 rounded-lg">←</button>
@@ -3949,7 +3949,7 @@ const wipeAllData = () => {
               </div>
             </div>
 
-            <div className="bg-slate-800 rounded-xl p-4">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <h3 className="text-white font-medium mb-3">Adherence Summary</h3>
               <div className="grid grid-cols-2 gap-3">
                 {schedules.map(schedule => {
