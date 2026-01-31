@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from 'recharts';
-import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays, Droplets, Beef, FileDown, MoreHorizontal } from 'lucide-react';
+import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays, Droplets, Beef, FileDown, MoreHorizontal, Trophy } from 'lucide-react';
 import { MEDICATION_EFFECT_PROFILES, MEDICATION_PHASE_TIMELINES } from './medicationInsights';
 
 // Comprehensive peptide/medication list with pharmacokinetic data
@@ -74,6 +74,14 @@ const EFFECT_PROFILES = {
     peakEffects: 'Days 1–2 of daily dosing; steady state in 1–2 weeks',
     steadyState: '1–2 weeks of consistent daily dosing'
   }
+};
+
+// Typical weekly weight loss (lb/week) from trials — for "On track?" comparison (approximate)
+const TYPICAL_WEEKLY_LOSS = {
+  'Semaglutide': 0.6, 'Wegovy': 0.6, 'Ozempic': 0.5,
+  'Tirzepatide': 0.7, 'Mounjaro': 0.7, 'Zepbound': 0.7,
+  'Liraglutide': 0.4, 'Dulaglutide': 0.4,
+  'Retatrutide': 0.8
 };
 
 // Phase timelines for each medication category (like glapp.io)
@@ -927,12 +935,13 @@ const PepTalk = () => {
   const [userProfile, setUserProfile] = useState({ height: 70, goalWeight: 200 });
   const [timeRange, setTimeRange] = useState('all');
   const [activeToolSection, setActiveToolSection] = useState('calculator');
+  const [exportFormat, setExportFormat] = useState('json'); // 'json' | 'doctor' | 'csv'
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
   const [wipeConfirmChecked, setWipeConfirmChecked] = useState(false);
 
   
   // Graph visibility state
-  const [visibleLines, setVisibleLines] = useState({ weight: true }); // Start with weight visible, meds added dynamically
+  const [visibleLines, setVisibleLines] = useState({ weight: true, trend: true });
   
   // Weight form states
   const [weight, setWeight] = useState('');
@@ -1587,6 +1596,31 @@ ${userProfile?.goalWeight ? `<p class="meta">Goal weight: ${userProfile.goalWeig
     setTimeout(() => { try { win.print(); } finally { win.close(); } }, 400);
   };
 
+  const exportCSV = () => {
+    const sortedWeights = [...weightEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    const sortedInjections = [...injectionEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    const rows = [];
+    rows.push('Type,Date,Value,Medication,Dose,Unit');
+    sortedWeights.forEach(e => rows.push(`Weight,${e.date},${e.weight},,,`));
+    sortedInjections.forEach(e => rows.push(`Injection,${e.date},,${e.type},${e.dose},${e.unit}`));
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `PepTalk-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const runExport = () => {
+    if (exportFormat === 'json') exportData();
+    else if (exportFormat === 'doctor') printDoctorSummary();
+    else if (exportFormat === 'csv') exportCSV();
+  };
+
 // Wipe ALL local data and reset state (factory reset)
 const wipeAllData = () => {
   const keysToRemove = [
@@ -1685,6 +1719,43 @@ const wipeAllData = () => {
     return { current: current.toFixed(1), change: change.toFixed(1), trend: change < 0 ? 'down' : change > 0 ? 'up' : 'neutral', bmi, percentChange: percentChange.toFixed(1), weeklyAvg: weeklyAvg.toFixed(1), toGoal: toGoal.toFixed(1), estimatedGoalDate };
   };
 
+  // "On track?" — compare user's weekly loss to typical GLP-1 loss (from trials)
+  const getOnTrackInfo = () => {
+    const filtered = getFilteredData(weightEntries);
+    if (filtered.length < 2) return null;
+    const lastInjection = [...injectionEntries].sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date))[0];
+    if (!lastInjection) return null;
+    const med = MEDICATIONS.find(m => m.name === lastInjection.type);
+    if (!med || !['GLP-1', 'GLP-1/GIP', 'Triple Agonist'].includes(med.category)) return null;
+    const typical = TYPICAL_WEEKLY_LOSS[lastInjection.type] ?? TYPICAL_WEEKLY_LOSS[med.name] ?? 0.5;
+    const userLoss = -parseFloat(stats.weeklyAvg); // positive = lbs lost per week
+    if (userLoss <= 0) return { med: lastInjection.type, dose: `${lastInjection.dose}${lastInjection.unit}`, typical, userLoss: 0, status: 'slower' };
+    const ratio = userLoss / typical;
+    let status = 'on_track';
+    if (ratio >= 1.2) status = 'ahead';
+    else if (ratio < 0.7) status = 'slower';
+    return { med: lastInjection.type, dose: `${lastInjection.dose}${lastInjection.unit}`, typical, userLoss, status };
+  };
+
+  // Milestones: 5 lb down, 10 lb down, ... from start weight toward goal
+  const getMilestones = () => {
+    const sorted = [...weightEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    if (sorted.length === 0) return [];
+    const startWeight = parseFloat(sorted[0].weight);
+    const currentWeight = parseFloat(stats.current);
+    if (stats.current === '-' || isNaN(currentWeight)) return [];
+    const goalWeight = userProfile?.goalWeight ? parseFloat(userProfile.goalWeight) : startWeight - 30;
+    const totalToLose = startWeight - goalWeight;
+    if (totalToLose <= 0) return [];
+    const list = [];
+    for (let lb = 5; lb <= Math.ceil(totalToLose / 5) * 5; lb += 5) {
+      const achieved = (startWeight - currentWeight) >= lb;
+      const toGo = achieved ? 0 : lb - (startWeight - currentWeight);
+      list.push({ label: `${lb} lb down`, lb, achieved, toGo });
+    }
+    return list;
+  };
+
   const getNextInjections = () => {
     const upcoming = [];
     const today = new Date();
@@ -1748,23 +1819,34 @@ const wipeAllData = () => {
     filteredWeights.forEach(e => allDates.add(e.date));
     filteredInjections.forEach(e => allDates.add(e.date));
     const sortedDates = Array.from(allDates).sort((a, b) => new Date(a) - new Date(b));
-    return sortedDates.map(date => {
+    const points = sortedDates.map(date => {
       const weightEntry = filteredWeights.find(e => e.date === date);
       const dayInjections = filteredInjections.filter(e => e.date === date);
       const doseData = {};
       const unitData = {};
       dayInjections.forEach(inj => {
-        // Convert everything to mg for y-axis scaling
         let doseInMg = parseFloat(inj.dose);
         if (inj.unit === 'mcg') doseInMg = inj.dose / 1000;
-        if (inj.unit === 'ml') doseInMg = inj.dose; // Keep ml as-is for display
-        if (inj.unit === 'units') doseInMg = inj.dose / 100; // Scale down for display
-        if (inj.unit === 'IU') doseInMg = inj.dose / 1000; // Scale down for display
+        if (inj.unit === 'ml') doseInMg = inj.dose;
+        if (inj.unit === 'units') doseInMg = inj.dose / 100;
+        if (inj.unit === 'IU') doseInMg = inj.dose / 1000;
         doseData[inj.type] = doseInMg;
-        unitData[inj.type] = inj.unit; // Store the original unit
+        unitData[inj.type] = inj.unit;
       });
-      return { date: parseLocalDate(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), fullDate: date, weight: weightEntry?.weight || null, units: unitData, ...doseData };
+      return { date: parseLocalDate(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), fullDate: date, weight: weightEntry?.weight != null ? parseFloat(weightEntry.weight) : null, units: unitData, ...doseData };
     });
+    // 7-day moving average trend line
+    points.forEach(p => {
+      const pointDate = new Date(p.fullDate);
+      const windowStart = new Date(pointDate);
+      windowStart.setDate(windowStart.getDate() - 6);
+      const inWindow = filteredWeights.filter(e => {
+        const d = parseLocalDate(e.date);
+        return d >= windowStart && d <= pointDate;
+      });
+      p.weightTrend = inWindow.length ? inWindow.reduce((s, e) => s + parseFloat(e.weight), 0) / inWindow.length : null;
+    });
+    return points;
   };
 
   const getLoggedMedications = () => {
@@ -2316,6 +2398,40 @@ const wipeAllData = () => {
               </div>
             )}
 
+            {/* On track? — compare to typical GLP-1 loss */}
+            {getOnTrackInfo() && (
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
+                <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Activity className="h-4 w-4 text-amber-400" />On track?</h3>
+                {(() => {
+                  const info = getOnTrackInfo();
+                  const statusMsg = info.status === 'ahead' ? "You're ahead of typical loss — great progress." : info.status === 'slower' ? "You're losing slower than average. Normal early on or at lower doses." : "Your loss is in line with typical results for your medication.";
+                  const statusColor = info.status === 'ahead' ? 'text-emerald-400' : info.status === 'slower' ? 'text-amber-400' : 'text-emerald-400';
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-slate-300 text-sm">On {info.med} {info.dose}, people typically lose about <strong className="text-white">{info.typical} lb/week</strong>. You're averaging <strong className="text-white">{info.userLoss.toFixed(1)} lb/week</strong>.</p>
+                      <p className={`text-sm font-medium ${statusColor}`}>{statusMsg}</p>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Milestones — 5 lb down, 10 lb down, ... */}
+            {getMilestones().length > 0 && (
+              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
+                <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-400" />Milestones</h3>
+                <div className="flex flex-wrap gap-2">
+                  {getMilestones().map((m, i) => (
+                    <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${m.achieved ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400 border border-white/[0.04]'}`}>
+                      {m.achieved ? <CheckCircle className="h-4 w-4 flex-shrink-0" /> : <span className="w-4 h-4 rounded-full border-2 border-slate-500 flex-shrink-0" />}
+                      <span>{m.label}</span>
+                      {!m.achieved && m.toGo > 0 && <span className="text-slate-500 text-xs">— {m.toGo.toFixed(0)} lb to go</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Daily track: hydration + protein */}
             <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Droplets className="h-4 w-4 text-sky-400" /><Beef className="h-4 w-4 text-amber-400" />Daily — Hydration & Protein</h3>
@@ -2513,11 +2629,15 @@ const wipeAllData = () => {
                       formatter={(value, name, props) => { 
                         if (!value) return null; 
                         if (name === 'Weight') return [`${value} lbs`, 'Weight'];
+                        if (name === 'Trend (7-day)') return [`${value.toFixed(1)} lbs`, name];
                         const unit = props.payload?.units?.[name] || 'mg';
                         return [`${value} ${unit}`, name]; 
                       }} />
                     {visibleLines.weight && (
                       <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#f472b6" strokeWidth={3} dot={{ fill: '#f472b6', r: 5 }} connectNulls name="Weight" />
+                    )}
+                    {visibleLines.trend !== false && (
+                      <Line yAxisId="left" type="monotone" dataKey="weightTrend" stroke="#a78bfa" strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls name="Trend (7-day)" />
                     )}
                     {getLoggedMedications().map(med => {
                       if (!visibleLines[med]) return null; // Hide if toggled off
@@ -2541,6 +2661,13 @@ const wipeAllData = () => {
                   >
                     <div className={`w-3 h-3 rounded-full ${visibleLines.weight ? 'bg-pink-400' : 'bg-slate-600'}`}></div>
                     <span className={`text-xs ${visibleLines.weight ? 'text-slate-200' : 'text-slate-500'}`}>Weight</span>
+                  </button>
+                  <button 
+                    onClick={() => setVisibleLines(prev => ({ ...prev, trend: !prev.trend }))}
+                    className={`flex items-center gap-2 px-2 py-1 rounded transition-all ${visibleLines.trend !== false ? 'opacity-100' : 'opacity-40'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full ${visibleLines.trend !== false ? 'bg-violet-400' : 'bg-slate-600'}`}></div>
+                    <span className={`text-xs ${visibleLines.trend !== false ? 'text-slate-200' : 'text-slate-500'}`}>Trend (7-day)</span>
                   </button>
                   {getLoggedMedications().map(med => {
                     // Initialize visibility for new medications
@@ -3972,35 +4099,26 @@ const wipeAllData = () => {
                   </h3>
                   
                   <div className="space-y-4">
-                    {/* Doctor summary – Print / Save as PDF */}
+                    {/* Export — choose format then export */}
                     <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
                       <h4 className="text-white font-medium mb-2 flex items-center gap-2">
                         <FileDown className="h-5 w-5 text-amber-400" />
-                        Doctor summary
+                        Export data
                       </h4>
                       <p className="text-slate-400 text-sm mb-3">
-                        Open a print-friendly summary (weight, injections, measurements, journal). Use Print → Save as PDF to share with your provider.
+                        Choose the type of export you need, then tap Export.
                       </p>
-                      <button onClick={printDoctorSummary} className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-medium py-3 rounded-lg flex items-center justify-center gap-2 shadow-amber-500/20">
+                      <div className="mb-4">
+                        <label className="text-slate-400 text-xs block mb-2">Export as</label>
+                        <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3 border border-white/[0.06]">
+                          <option value="json">JSON Backup — full backup, import later</option>
+                          <option value="doctor">Doctor summary — Print / Save as PDF</option>
+                          <option value="csv">CSV — weight & injections (spreadsheets)</option>
+                        </select>
+                      </div>
+                      <button onClick={runExport} className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-medium py-3 rounded-lg flex items-center justify-center gap-2 shadow-amber-500/20">
                         <FileDown className="h-5 w-5" />
-                        Print / Save as PDF for doctor
-                      </button>
-                    </div>
-
-                    {/* Export Section */}
-                    <div className="rounded-xl p-4 border border-white/[0.04] bg-slate-700/40">
-                      <h4 className="text-white font-medium mb-2">Export Data</h4>
-                      <p className="text-slate-400 text-sm mb-3">
-                        Download all your data as a backup file. Use this to:
-                      </p>
-                      <ul className="text-slate-400 text-sm space-y-1 mb-4 ml-4">
-                        <li>• Backup your data</li>
-                        <li>• Transfer to another device</li>
-                        <li>• Share with your doctor</li>
-                      </ul>
-                      <button onClick={exportData} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2">
-                        <Activity className="h-5 w-5" />
-                        Export All Data
+                        {exportFormat === 'json' ? 'Export backup (JSON)' : exportFormat === 'doctor' ? 'Open doctor summary (Print/PDF)' : 'Download CSV'}
                       </button>
                     </div>
 
