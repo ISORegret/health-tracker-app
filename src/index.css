@@ -13,6 +13,8 @@
   --border-subtle: rgba(255, 255, 255, 0.06);
   --radius-card: 1rem;
   --radius-pill: 9999px;
+  /* Set by JS for web vs native so Android/iOS get correct asset path */
+  --bg-image: url('/PepTalk/bg-hex.jpg');
 }
 
 html, body {
@@ -30,7 +32,7 @@ body::before {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(90deg);
-  background-image: url('/PepTalk/bg-hex.jpg');
+  background-image: var(--bg-image);
   background-size: cover;
   background-position: center;
   z-index: 0;
