@@ -2036,6 +2036,7 @@ const wipeAllData = () => {
         <header className="text-center mb-6">
           <h1 className="text-2xl font-bold text-white tracking-tight mb-0.5">PepTalk</h1>
           <p className="text-slate-400 text-sm font-medium">Weight · Injections · Measurements · Tools</p>
+          <p className="text-[10px] text-slate-500 mt-2 font-medium uppercase tracking-wider">Modern UI</p>
         </header>
 
         {/* Upcoming Injections Alert - Shows ALL overdue/due medications with dismiss */}
