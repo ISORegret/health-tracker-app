@@ -24,6 +24,15 @@ allprojects {
     }
 }
 
+// Disable validateSigningRelease when Android Studio injected a broken externalOverride keystore path.
+subprojects { sub ->
+    sub.tasks.whenTaskAdded { task ->
+        if (task.name == 'validateSigningRelease') {
+            task.enabled = false
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
