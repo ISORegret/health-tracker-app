@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from 'recharts';
 import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays } from 'lucide-react';
 import { MEDICATION_EFFECT_PROFILES, MEDICATION_PHASE_TIMELINES } from './medicationInsights';
@@ -1034,7 +1035,7 @@ const PepTalk = () => {
   };
   
 
-  const loadData = () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
       const weightData = localStorage.getItem('health-weight-entries');
@@ -1059,8 +1060,16 @@ const PepTalk = () => {
       if (fastingData) setFastingEntries(JSON.parse(fastingData));
       if (notificationSettingsData) setNotificationSettings(JSON.parse(notificationSettingsData));
       
-      // Check notification permission status
-      if ('Notification' in window) {
+      // Check notification permission status (web vs native)
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          const perm = await LocalNotifications.checkPermissions();
+          setNotificationPermission(perm.display === 'granted' ? 'granted' : perm.display === 'denied' ? 'denied' : 'default');
+        } catch (_) {
+          setNotificationPermission('default');
+        }
+      } else if ('Notification' in window) {
         setNotificationPermission(Notification.permission);
       }
     } catch (error) {
@@ -1150,8 +1159,7 @@ const PepTalk = () => {
   // Schedule local (push-style) notifications on device for when app is closed (Android/iOS)
   const scheduleLocalInjectionReminders = async (settingsOverride) => {
     try {
-      const cap = window.Capacitor;
-      if (!cap?.isNativePlatform()) return;
+      if (!Capacitor.isNativePlatform()) return;
       const { LocalNotifications } = await import('@capacitor/local-notifications');
       const perm = await LocalNotifications.checkPermissions();
       if (perm.display !== 'granted') await LocalNotifications.requestPermissions();
@@ -1189,12 +1197,22 @@ const PepTalk = () => {
 
   // Notification functions
   const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      alert('This browser does not support notifications');
-      return false;
-    }
-    
     try {
+      if (Capacitor.isNativePlatform()) {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        const perm = await LocalNotifications.requestPermissions();
+        const status = perm.display === 'granted' ? 'granted' : perm.display === 'denied' ? 'denied' : 'default';
+        setNotificationPermission(status);
+        if (status === 'granted') {
+          scheduleInjectionNotifications();
+          await scheduleLocalInjectionReminders();
+        }
+        return status === 'granted';
+      }
+      if (!('Notification' in window)) {
+        alert('This browser does not support notifications');
+        return false;
+      }
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
       if (permission === 'granted') {
@@ -3619,7 +3637,7 @@ const wipeAllData = () => {
                         <div className="text-white font-medium">Notification Permission</div>
                         <div className="text-slate-400 text-sm">
                           {notificationPermission === 'granted' && 'Notifications enabled! You\'ll receive injection reminders.'}
-                          {notificationPermission === 'denied' && 'Notifications blocked. Enable in browser settings.'}
+                          {notificationPermission === 'denied' && (Capacitor.isNativePlatform() ? 'Notifications blocked. Enable in device Settings → Apps → PepTalk → Notifications.' : 'Notifications blocked. Enable in browser settings.')}
                           {notificationPermission === 'default' && 'Allow notifications to get injection reminders.'}
                         </div>
                       </div>
@@ -3634,7 +3652,7 @@ const wipeAllData = () => {
                     </div>
                     {notificationPermission === 'denied' && (
                       <div className="text-xs text-slate-400 mt-2">
-                        To enable: Open browser settings → Permissions → Notifications → Allow for this site
+                        {Capacitor.isNativePlatform() ? 'To enable: Settings → Apps → PepTalk → Notifications → Allow' : 'To enable: Open browser settings → Permissions → Notifications → Allow for this site'}
                       </div>
                     )}
                   </div>
