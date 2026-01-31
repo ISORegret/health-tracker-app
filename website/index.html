@@ -299,6 +299,63 @@
       margin-bottom: 1rem;
       animation: fadeInUp 0.7s ease-out 0.05s both;
     }
+
+    /* Screenshots section (glapp-style) */
+    .screenshots-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+    .screenshots-section.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .screenshots-section.reveal.in-view { opacity: 1; transform: translateY(0); }
+    .screenshots-section .section-title {
+      margin-bottom: 0.5rem;
+    }
+    .screenshots-section .section-sub {
+      margin-bottom: 1.75rem;
+    }
+    .screenshots-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    .phone-frame {
+      flex: 0 0 auto;
+      width: min(180px, 42vw);
+      max-width: 200px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 2rem;
+      padding: 0.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.04);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .phone-frame:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 168, 83, 0.12);
+    }
+    .phone-frame-inner {
+      border-radius: 1.5rem;
+      overflow: hidden;
+      background: #0a0a0c;
+      min-height: 320px;
+      position: relative;
+    }
+    .phone-frame-inner img {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: top;
+    }
+    .phone-frame-caption {
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 0.6rem;
+    }
   </style>
 </head>
 <body>
@@ -321,6 +378,37 @@
         </svg>
         Download for Android
       </a>
+    </section>
+
+    <section class="screenshots-section reveal">
+      <h2 class="section-title">See PepTalk in action</h2>
+      <p class="section-sub">Summary, weight, injections, and insights — all in one place.</p>
+      <div class="screenshots-row">
+        <div class="phone-frame">
+          <div class="phone-frame-inner">
+            <img src="screenshots/summary.png" alt="PepTalk Summary screen — weight change, BMI, goals" loading="lazy" />
+          </div>
+          <p class="phone-frame-caption">Summary</p>
+        </div>
+        <div class="phone-frame">
+          <div class="phone-frame-inner">
+            <img src="screenshots/weight.png" alt="PepTalk Weight screen — logs and charts" loading="lazy" />
+          </div>
+          <p class="phone-frame-caption">Weight</p>
+        </div>
+        <div class="phone-frame">
+          <div class="phone-frame-inner">
+            <img src="screenshots/injections.png" alt="PepTalk Injections screen — doses and schedule" loading="lazy" />
+          </div>
+          <p class="phone-frame-caption">Injections</p>
+        </div>
+        <div class="phone-frame">
+          <div class="phone-frame-inner">
+            <img src="screenshots/insights.png" alt="PepTalk Insights screen — body phase and trends" loading="lazy" />
+          </div>
+          <p class="phone-frame-caption">Insights</p>
+        </div>
+      </div>
     </section>
 
     <section class="section reveal">
