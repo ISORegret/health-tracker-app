@@ -2968,6 +2968,13 @@ const wipeAllData = () => {
               </div>
             </div>
 
+            <div className="rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5 backdrop-blur-sm">
+              <p className="text-slate-300 text-sm mb-2">For best results, use our Calorie / TDEE calculator to align your intake with your goals.</p>
+              <button onClick={() => { setActiveTab('more'); setActiveMoreSection('tools'); setActiveToolSection('calculator'); }} className="text-amber-400 hover:text-amber-300 text-sm font-medium flex items-center gap-2">
+                <Calculator className="h-4 w-4" /> Open Calorie & TDEE Calculator
+              </button>
+            </div>
+
             {showAddForm && (
               <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-4">
