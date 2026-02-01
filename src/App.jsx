@@ -918,6 +918,21 @@ const parseLocalDate = (dateString) => {
   return new Date(year, month - 1, day);
 };
 
+// Today as YYYY-MM-DD in local timezone (fixes date picker showing "next day" in some timezones)
+const getTodayLocal = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+const formatDateLocal = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 // Sort weight entries by date then id (same-day order = entry order). Use for "previous" / "current" / "start".
 const sortWeightByDateAsc = (entries) => [...entries].sort((a, b) => {
   const d = parseLocalDate(a.date) - parseLocalDate(b.date);
@@ -955,13 +970,13 @@ const PepTalk = () => {
   
   // Weight form states
   const [weight, setWeight] = useState('');
-  const [weightDate, setWeightDate] = useState(new Date().toISOString().split('T')[0]);
+  const [weightDate, setWeightDate] = useState(getTodayLocal());
   const [editingWeight, setEditingWeight] = useState(null);
   
   // Fasting window tracker states (separate from weight)
   const [fastingEntries, setFastingEntries] = useState([]);
   const [fastingHours, setFastingHours] = useState('');
-  const [fastingDate, setFastingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [fastingDate, setFastingDate] = useState(getTodayLocal());
   const [showFastingForm, setShowFastingForm] = useState(false);
   const [editingFasting, setEditingFasting] = useState(null);
   
@@ -980,7 +995,7 @@ const PepTalk = () => {
   const [injectionType, setInjectionType] = useState('Semaglutide');
   const [injectionDose, setInjectionDose] = useState('');
   const [injectionUnit, setInjectionUnit] = useState('mg');
-  const [injectionDate, setInjectionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [injectionDate, setInjectionDate] = useState(getTodayLocal());
   const [injectionSite, setInjectionSite] = useState('Stomach');
   const [injectionNotes, setInjectionNotes] = useState('');
   const [selectedSideEffects, setSelectedSideEffects] = useState([]);
@@ -991,13 +1006,13 @@ const PepTalk = () => {
   // Measurement form states
   const [measurementType, setMeasurementType] = useState('Waist');
   const [measurementValue, setMeasurementValue] = useState('');
-  const [measurementDate, setMeasurementDate] = useState(new Date().toISOString().split('T')[0]);
+  const [measurementDate, setMeasurementDate] = useState(getTodayLocal());
 
   // Schedule form states
   const [scheduleMed, setScheduleMed] = useState('Semaglutide');
   const [scheduleFrequency, setScheduleFrequency] = useState(7);
   const [scheduleDay, setScheduleDay] = useState(0);
-  const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [scheduleStartDate, setScheduleStartDate] = useState(getTodayLocal());
   const [scheduleType, setScheduleType] = useState('recurring'); // 'recurring' or 'specific_days'
   const [selectedDays, setSelectedDays] = useState([]); // [0,1,2,3,4,5,6] for Sun-Sat
 
@@ -1038,7 +1053,7 @@ const PepTalk = () => {
   const [activeMoreSection, setActiveMoreSection] = useState('body');
 
   // Journal form states
-  const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0]);
+  const [journalDate, setJournalDate] = useState(getTodayLocal());
   const [journalContent, setJournalContent] = useState('');
   const [journalMood, setJournalMood] = useState('neutral');
   const [journalEnergy, setJournalEnergy] = useState(5);
@@ -1127,11 +1142,11 @@ const PepTalk = () => {
   };
 
   // Form reset functions
-  const resetWeightForm = () => { setWeight(''); setWeightDate(new Date().toISOString().split('T')[0]); setEditingWeight(null); setShowAddForm(false); };
-  const resetInjectionForm = () => { setInjectionType('Semaglutide'); setInjectionDose(''); setInjectionUnit('mg'); setInjectionDate(new Date().toISOString().split('T')[0]); setInjectionSite('Stomach'); setInjectionNotes(''); setSelectedSideEffects([]); setEditingInjection(null); setShowAddForm(false); setShowMedDropdown(false); setMedSearchTerm(''); };
-  const resetMeasurementForm = () => { setMeasurementType('Waist'); setMeasurementValue(''); setMeasurementDate(new Date().toISOString().split('T')[0]); setShowAddForm(false); };
-  const resetJournalForm = () => { setJournalContent(''); setJournalMood('neutral'); setJournalEnergy(5); setJournalHunger(5); setJournalDate(new Date().toISOString().split('T')[0]); setEditingJournal(null); setShowAddForm(false); };
-  const resetFastingForm = () => { setFastingHours(''); setFastingDate(new Date().toISOString().split('T')[0]); setEditingFasting(null); setShowFastingForm(false); };
+  const resetWeightForm = () => { setWeight(''); setWeightDate(getTodayLocal()); setEditingWeight(null); setShowAddForm(false); };
+  const resetInjectionForm = () => { setInjectionType('Semaglutide'); setInjectionDose(''); setInjectionUnit('mg'); setInjectionDate(getTodayLocal()); setInjectionSite('Stomach'); setInjectionNotes(''); setSelectedSideEffects([]); setEditingInjection(null); setShowAddForm(false); setShowMedDropdown(false); setMedSearchTerm(''); };
+  const resetMeasurementForm = () => { setMeasurementType('Waist'); setMeasurementValue(''); setMeasurementDate(getTodayLocal()); setShowAddForm(false); };
+  const resetJournalForm = () => { setJournalContent(''); setJournalMood('neutral'); setJournalEnergy(5); setJournalHunger(5); setJournalDate(getTodayLocal()); setEditingJournal(null); setShowAddForm(false); };
+  const resetFastingForm = () => { setFastingHours(''); setFastingDate(getTodayLocal()); setEditingFasting(null); setShowFastingForm(false); };
 
   // CRUD operations
   const addOrUpdateWeight = () => {
@@ -1422,9 +1437,9 @@ const PepTalk = () => {
     const existing = titrationPlans.find(t => t.medication === titrationMed);
     let updated;
     if (existing) {
-      updated = titrationPlans.map(t => t.medication === titrationMed ? { ...t, steps: validSteps, startDate: new Date().toISOString().split('T')[0] } : t);
+      updated = titrationPlans.map(t => t.medication === titrationMed ? { ...t, steps: validSteps, startDate: getTodayLocal() } : t);
     } else {
-      updated = [...titrationPlans, { id: Date.now(), medication: titrationMed, steps: validSteps, startDate: new Date().toISOString().split('T')[0] }];
+      updated = [...titrationPlans, { id: Date.now(), medication: titrationMed, steps: validSteps, startDate: getTodayLocal() }];
     }
     setTitrationPlans(updated);
     saveData('health-titration', updated);
@@ -1464,7 +1479,7 @@ const PepTalk = () => {
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => {
-      const updated = [...progressPhotos, { id: Date.now(), data: reader.result, date: new Date().toISOString().split('T')[0], note: '' }];
+      const updated = [...progressPhotos, { id: Date.now(), data: reader.result, date: getTodayLocal(), note: '' }];
       setProgressPhotos(updated);
       saveData('health-photos', updated);
     };
@@ -1492,7 +1507,7 @@ const PepTalk = () => {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `health-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `health-tracker-backup-${getTodayLocal()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1635,7 +1650,7 @@ ${userProfile?.goalWeight ? `<p class="meta">Goal weight: ${userProfile.goalWeig
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `PepTalk-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `PepTalk-export-${getTodayLocal()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1921,10 +1936,10 @@ const wipeAllData = () => {
     for (let i = 0; i < 42; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       const injections = injectionEntries.filter(inj => inj.date === dateStr);
       const isCurrentMonth = date.getMonth() === month;
-      days.push({ date, dateStr, injections, isCurrentMonth, isToday: dateStr === new Date().toISOString().split('T')[0] });
+      days.push({ date, dateStr, injections, isCurrentMonth, isToday: dateStr === getTodayLocal() });
     }
     return days;
   };
@@ -1961,7 +1976,7 @@ const wipeAllData = () => {
   };
 
   // Daily track: save today's hydration + protein
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayLocal();
   const todayDaily = dailyTrackEntries.find(e => e.date === todayStr);
   const addOrUpdateDailyTrack = () => {
     const hydrationOz = dailyHydration !== '' ? parseFloat(dailyHydration) : (todayDaily?.hydrationOz ?? 0);
@@ -2143,7 +2158,7 @@ const wipeAllData = () => {
     for (let i = -14; i <= 0; i++) {
       const date = new Date(now);
       date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       
       // Calculate total level from all injections
       let totalLevel = 0;
