@@ -69,6 +69,9 @@
       display: flex;
       flex-direction: column;
       padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 4vw, 1.5rem);
+      padding-bottom: 2rem;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     /* Hero — compact */
@@ -132,14 +135,6 @@
     }
     .hero .value-strip span { color: var(--accent); opacity: 0.9; }
     .hero .value-strip .dot { opacity: 0.4; user-select: none; }
-    .hero .btns {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 0.5rem;
-    }
     .btn-download {
       display: inline-flex;
       align-items: center;
@@ -200,8 +195,7 @@
 
     /* Features — benefit sections (MeAgain/Glapp style) */
     .features-wrap {
-      flex: 1;
-      min-height: 0;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -241,8 +235,7 @@
       gap: 0.75rem;
       max-width: 700px;
       width: 100%;
-      flex: 1;
-      min-height: 0;
+      flex: 0 0 auto;
       text-align: left;
     }
     .benefit-block {
@@ -308,8 +301,9 @@
       justify-content: center;
       align-items: flex-start;
       gap: 0.75rem;
-      margin-top: 0.75rem;
-      padding: 0.35rem 0;
+      margin-top: 1.25rem;
+      padding: 0.5rem 0 0.35rem;
+      clear: both;
     }
     .phone-frame {
       width: clamp(130px, 22vw, 200px);
@@ -351,7 +345,8 @@
     .strip {
       flex-shrink: 0;
       text-align: center;
-      padding: 0.5rem 0.25rem 0.25rem;
+      padding: 0.75rem 0.25rem 0.5rem;
+      margin-top: 0.5rem;
       border-top: 1px solid var(--border);
     }
     .strip p {
@@ -365,7 +360,8 @@
     footer {
       flex-shrink: 0;
       text-align: center;
-      padding: 0.25rem 0;
+      padding: 0.75rem 0 0;
+      margin-top: 0.25rem;
       color: var(--text-muted);
       font-size: 0.65rem;
     }
@@ -376,7 +372,6 @@
     @media (max-width: 600px) {
       .benefit-sections { grid-template-columns: 1fr; max-width: 360px; }
       .screens-row { flex-wrap: wrap; justify-content: center; }
-      .page { overflow-y: auto; overflow-x: hidden; }
     }
 
     /* Lightbox */
@@ -430,15 +425,6 @@
       <p class="tagline">Weight · Injections · Glucose · Measurements · Tools</p>
       <h2>Track your health journey in one place</h2>
       <p class="value-strip"><span>Track</span> <span class="dot">·</span> <span>Remind</span> <span class="dot">·</span> <span>Review</span></p>
-      <div class="btns">
-        <a href="PepTalk.apk" class="btn-download" download="PepTalk.apk">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Download for Android
-        </a>
-        <a href="https://buymeacoffee.com/rtaylorbrix" class="btn-coffee" target="_blank" rel="noopener noreferrer">☕ Coffee</a>
-      </div>
     </section>
 
     <p class="value-block"><strong>One app.</strong> No account. <strong>Your data stays yours.</strong></p>
