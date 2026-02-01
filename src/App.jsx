@@ -918,6 +918,16 @@ const parseLocalDate = (dateString) => {
   return new Date(year, month - 1, day);
 };
 
+// Sort weight entries by date then id (same-day order = entry order). Use for "previous" / "current" / "start".
+const sortWeightByDateAsc = (entries) => [...entries].sort((a, b) => {
+  const d = parseLocalDate(a.date) - parseLocalDate(b.date);
+  return d !== 0 ? d : ((a.id || 0) - (b.id || 0));
+});
+const sortWeightByDateDesc = (entries) => [...entries].sort((a, b) => {
+  const d = parseLocalDate(b.date) - parseLocalDate(a.date);
+  return d !== 0 ? d : ((b.id || 0) - (a.id || 0));
+});
+
 const PepTalk = () => {
   const [activeTab, setActiveTab] = useState('summary');
   const [weightEntries, setWeightEntries] = useState([]);
@@ -1079,7 +1089,10 @@ const PepTalk = () => {
       const notificationSettingsData = localStorage.getItem('health-notification-settings');
       const dailyTrackData = localStorage.getItem('health-daily-track');
       
-      if (weightData) setWeightEntries(JSON.parse(weightData));
+      if (weightData) {
+        const parsed = JSON.parse(weightData);
+        setWeightEntries(sortWeightByDateAsc(parsed));
+      }
       if (injectionData) setInjectionEntries(JSON.parse(injectionData));
       if (profileData) setUserProfile(JSON.parse(profileData));
       if (measurementData) setMeasurementEntries(JSON.parse(measurementData));
@@ -1127,13 +1140,17 @@ const PepTalk = () => {
     let updated = editingWeight 
       ? weightEntries.map(e => e.id === editingWeight.id ? { ...e, weight: newWeight, date: weightDate } : e)
       : [...weightEntries, { id: Date.now(), weight: newWeight, date: weightDate }];
-    updated.sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    // Store in chronological order (date asc, then id for same-day)
+    updated = sortWeightByDateAsc(updated);
     
-    // Check for milestones and celebrate!
+    // Check for milestones and celebrate! Use date/time order, not array position.
     if (!editingWeight && weightEntries.length > 0) {
-      const oldWeight = weightEntries[weightEntries.length - 1].weight;
+      const byDateDesc = sortWeightByDateDesc(weightEntries);
+      const byDateAsc = sortWeightByDateAsc(weightEntries);
+      const oldWeight = byDateDesc[0].weight;   // most recent entry by date (and time via id)
+      const startWeight = byDateAsc[0].weight; // oldest entry by date
       const weightLost = oldWeight - newWeight;
-      const totalLost = weightEntries[0].weight - newWeight;
+      const totalLost = startWeight - newWeight;
       
       if (weightLost >= 1) celebrate('🎉 Down ' + weightLost.toFixed(1) + ' lbs!');
       if (Math.floor(totalLost) % 10 === 0 && totalLost >= 10) celebrate('🏆 ' + Math.floor(totalLost) + ' lbs lost total!');
@@ -1556,7 +1573,7 @@ const PepTalk = () => {
 
   // Print/save as PDF — doctor summary (opens print dialog; user can "Save as PDF")
   const printDoctorSummary = () => {
-    const sortedWeights = [...weightEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    const sortedWeights = sortWeightByDateAsc(weightEntries);
     const sortedInjections = [...injectionEntries].sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date));
     const byMed = {};
     sortedInjections.forEach(inj => {
@@ -1607,7 +1624,7 @@ ${userProfile?.goalWeight ? `<p class="meta">Goal weight: ${userProfile.goalWeig
   };
 
   const exportCSV = () => {
-    const sortedWeights = [...weightEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    const sortedWeights = sortWeightByDateAsc(weightEntries);
     const sortedInjections = [...injectionEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     const rows = [];
     rows.push('Type,Date,Value,Medication,Dose,Unit');
@@ -1706,15 +1723,16 @@ const wipeAllData = () => {
   const getWeightStats = () => {
     const filtered = getFilteredData(weightEntries);
     if (filtered.length === 0) return { current: '-', change: 0, trend: 'neutral', bmi: null, percentChange: 0, weeklyAvg: 0, toGoal: 0, estimatedGoalDate: null };
-    const sorted = [...filtered].sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date));
+    const sorted = sortWeightByDateDesc(filtered); // most recent first (by date then id)
+    const sortedAsc = sortWeightByDateAsc(filtered);
     const current = sorted[0].weight;
-    const first = sorted[sorted.length - 1].weight;
+    const first = sortedAsc[0].weight; // oldest in range
     const change = current - first;
     const percentChange = (change / first) * 100;
     const bmi = calculateBMI(current, userProfile.height);
     const toGoal = current - (userProfile.goalWeight || 200);
     
-    const firstDate = new Date(sorted[sorted.length - 1].date);
+    const firstDate = new Date(sortedAsc[0].date);
     const lastDate = new Date(sorted[0].date);
     const weeks = Math.max(1, (lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000));
     const weeklyAvg = change / weeks;
@@ -1751,7 +1769,7 @@ const wipeAllData = () => {
 
   // Milestones: 5 lb down, 10 lb down, ... from start weight toward goal
   const getMilestones = () => {
-    const sorted = [...weightEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    const sorted = sortWeightByDateAsc(weightEntries);
     if (sorted.length === 0) return [];
     const startWeight = parseFloat(sorted[0].weight);
     const currentWeight = parseFloat(stats.current);
@@ -1832,7 +1850,8 @@ const wipeAllData = () => {
     filteredInjections.forEach(e => allDates.add(e.date));
     const sortedDates = Array.from(allDates).sort((a, b) => new Date(a) - new Date(b));
     const points = sortedDates.map(date => {
-      const weightEntry = filteredWeights.find(e => e.date === date);
+      const dayWeights = filteredWeights.filter(e => e.date === date);
+      const weightEntry = dayWeights.length === 0 ? null : dayWeights.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
       const dayInjections = filteredInjections.filter(e => e.date === date);
       const doseData = {};
       const unitData = {};
@@ -3164,7 +3183,7 @@ const wipeAllData = () => {
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {[...weightEntries].sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date)).map((entry) => (
+                  {sortWeightByDateDesc(weightEntries).map((entry) => (
                     <div key={entry.id} className="flex items-center justify-between bg-slate-700/50 rounded-lg p-3 group">
                       <div className="flex items-center gap-3">
                         <div className="bg-pink-500/20 p-2 rounded-lg"><Scale className="h-5 w-5 text-pink-400" /></div>
