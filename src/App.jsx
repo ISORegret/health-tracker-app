@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from 'recharts';
-import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays, Droplets, Beef, FileDown, MoreHorizontal, Trophy, UtensilsCrossed } from 'lucide-react';
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from 'recharts';
+import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays, Droplets, Beef, FileDown, MoreHorizontal, Trophy, UtensilsCrossed, Droplet } from 'lucide-react';
 import { MEDICATION_EFFECT_PROFILES, MEDICATION_PHASE_TIMELINES } from './medicationInsights';
 
 // Comprehensive peptide/medication list with pharmacokinetic data
@@ -1039,6 +1039,17 @@ const PepTalk = () => {
   const [tdeeActivity, setTdeeActivity] = useState('moderate');
   const [tdeeResult, setTdeeResult] = useState(null);
 
+  // Glucose & A1C (optional for GLP-1/diabetes)
+  const [glucoseEntries, setGlucoseEntries] = useState([]);
+  const [a1cEntries, setA1cEntries] = useState([]);
+  const [glucoseValue, setGlucoseValue] = useState('');
+  const [glucoseDate, setGlucoseDate] = useState(getTodayLocal());
+  const [glucoseType, setGlucoseType] = useState('fasting');
+  const [a1cValue, setA1cValue] = useState('');
+  const [a1cDate, setA1cDate] = useState(getTodayLocal());
+  const [showGlucoseForm, setShowGlucoseForm] = useState(false);
+  const [showA1cForm, setShowA1cForm] = useState(false);
+
   // Daily track (hydration + protein)
   const [dailyTrackEntries, setDailyTrackEntries] = useState([]);
   const [dailyHydration, setDailyHydration] = useState('');
@@ -1103,6 +1114,8 @@ const PepTalk = () => {
       const fastingData = localStorage.getItem('health-fasting-entries');
       const notificationSettingsData = localStorage.getItem('health-notification-settings');
       const dailyTrackData = localStorage.getItem('health-daily-track');
+      const glucoseData = localStorage.getItem('health-glucose-entries');
+      const a1cData = localStorage.getItem('health-a1c-entries');
       
       if (weightData) {
         const parsed = JSON.parse(weightData);
@@ -1118,6 +1131,8 @@ const PepTalk = () => {
       if (fastingData) setFastingEntries(JSON.parse(fastingData));
       if (notificationSettingsData) setNotificationSettings(JSON.parse(notificationSettingsData));
       if (dailyTrackData) setDailyTrackEntries(JSON.parse(dailyTrackData));
+      if (glucoseData) setGlucoseEntries(JSON.parse(glucoseData));
+      if (a1cData) setA1cEntries(JSON.parse(a1cData));
       
       // Check notification permission status (web vs native)
       if (Capacitor.isNativePlatform()) {
@@ -1181,6 +1196,40 @@ const PepTalk = () => {
     const updated = weightEntries.filter(e => e.id !== id);
     setWeightEntries(updated);
     saveData('health-weight-entries', updated);
+  };
+
+  // Glucose & A1C CRUD
+  const addGlucose = () => {
+    const v = parseFloat(glucoseValue);
+    if (!glucoseValue || isNaN(v) || v < 20 || v > 500) return;
+    const updated = [...glucoseEntries, { id: Date.now(), date: glucoseDate, value: v, type: glucoseType }];
+    updated.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    setGlucoseEntries(updated);
+    saveData('health-glucose-entries', updated);
+    setGlucoseValue('');
+    setGlucoseDate(getTodayLocal());
+    setShowGlucoseForm(false);
+  };
+  const deleteGlucose = (id) => {
+    const updated = glucoseEntries.filter(e => e.id !== id);
+    setGlucoseEntries(updated);
+    saveData('health-glucose-entries', updated);
+  };
+  const addA1c = () => {
+    const v = parseFloat(a1cValue);
+    if (!a1cValue || isNaN(v) || v < 4 || v > 15) return;
+    const updated = [...a1cEntries, { id: Date.now(), date: a1cDate, value: v }];
+    updated.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    setA1cEntries(updated);
+    saveData('health-a1c-entries', updated);
+    setA1cValue('');
+    setA1cDate(getTodayLocal());
+    setShowA1cForm(false);
+  };
+  const deleteA1c = (id) => {
+    const updated = a1cEntries.filter(e => e.id !== id);
+    setA1cEntries(updated);
+    saveData('health-a1c-entries', updated);
   };
 
   // Fasting window CRUD operations
@@ -1499,6 +1548,8 @@ const PepTalk = () => {
       titrationPlans,
       journalEntries,
       dailyTrackEntries,
+      glucoseEntries,
+      a1cEntries,
       userProfile
     };
     
@@ -1569,6 +1620,14 @@ const PepTalk = () => {
         if (imported.dailyTrackEntries) {
           setDailyTrackEntries(imported.dailyTrackEntries);
           saveData('health-daily-track', imported.dailyTrackEntries);
+        }
+        if (imported.glucoseEntries) {
+          setGlucoseEntries(imported.glucoseEntries);
+          saveData('health-glucose-entries', imported.glucoseEntries);
+        }
+        if (imported.a1cEntries) {
+          setA1cEntries(imported.a1cEntries);
+          saveData('health-a1c-entries', imported.a1cEntries);
         }
         if (imported.userProfile) {
           setUserProfile(imported.userProfile);
@@ -1641,10 +1700,14 @@ ${userProfile?.goalWeight ? `<p class="meta">Goal weight: ${userProfile.goalWeig
   const exportCSV = () => {
     const sortedWeights = sortWeightByDateAsc(weightEntries);
     const sortedInjections = [...injectionEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
+    const sortedGlucose = sortByDateDesc(glucoseEntries);
+    const sortedA1c = sortByDateDesc(a1cEntries);
     const rows = [];
     rows.push('Type,Date,Value,Medication,Dose,Unit');
     sortedWeights.forEach(e => rows.push(`Weight,${e.date},${e.weight},,,`));
     sortedInjections.forEach(e => rows.push(`Injection,${e.date},,${e.type},${e.dose},${e.unit}`));
+    sortedGlucose.forEach(e => rows.push(`Glucose,${e.date},${e.value} mg/dL (${e.type}),,,`));
+    sortedA1c.forEach(e => rows.push(`A1C,${e.date},${e.value}%,,,`));
     const csv = rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1674,6 +1737,8 @@ const wipeAllData = () => {
     'health-titration',
     'health-journal',
     'health-daily-track',
+    'health-glucose-entries',
+    'health-a1c-entries',
     'health-user-profile',
   ];
 
@@ -1687,6 +1752,8 @@ const wipeAllData = () => {
   setTitrationPlans([]);
   setJournalEntries([]);
   setDailyTrackEntries([]);
+  setGlucoseEntries([]);
+  setA1cEntries([]);
   setUserProfile({ height: 70, goalWeight: 200 });
 
   setShowWipeConfirm(false);
@@ -1724,6 +1791,55 @@ const wipeAllData = () => {
     const sorted = [...filtered].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return `${formatDate(sorted[0].date)} – ${formatDate(sorted[sorted.length - 1].date)}`;
+  };
+
+  const sortByDateDesc = (entries) => [...entries].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  // Week in review: this week (Mon–today) weight change, injections, hydration
+  const getWeeklyDigest = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const toMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() + toMonday);
+    const startStr = formatDateLocal(startOfWeek);
+    const todayStr = getTodayLocal();
+
+    const weightInWeek = weightEntries.filter(e => e.date >= startStr && e.date <= todayStr);
+    const sortedWeights = sortWeightByDateAsc(weightEntries);
+    const beforeWeek = sortedWeights.filter(e => e.date < startStr);
+    const firstWeightOfWeek = weightInWeek.length ? parseFloat(sortWeightByDateAsc(weightInWeek)[0].weight) : (beforeWeek.length ? parseFloat(beforeWeek[beforeWeek.length - 1].weight) : null);
+    const lastWeightOfWeek = weightInWeek.length ? parseFloat(sortWeightByDateDesc(weightInWeek)[0].weight) : (sortedWeights.length ? parseFloat(sortedWeights[sortedWeights.length - 1].weight) : null);
+    const weightChange = (firstWeightOfWeek != null && lastWeightOfWeek != null) ? firstWeightOfWeek - lastWeightOfWeek : null;
+    const weightStr = weightChange != null ? (weightChange > 0 ? `−${weightChange.toFixed(1)}` : weightChange < 0 ? `+${Math.abs(weightChange).toFixed(1)}` : '0') + ' lb' : '—';
+
+    const injectionsInWeek = injectionEntries.filter(e => e.date >= startStr && e.date <= todayStr);
+    let expectedInjections = 0;
+    schedules.forEach(s => {
+      if (s.scheduleType === 'specific_days' && s.specificDays?.length) expectedInjections += s.specificDays.length;
+      else if (s.frequencyDays) expectedInjections += Math.min(7, Math.ceil(7 / s.frequencyDays));
+    });
+    if (expectedInjections === 0 && injectionEntries.length > 0) {
+      const meds = [...new Set(injectionEntries.map(i => i.type))];
+      meds.forEach(() => { expectedInjections += 1; });
+    }
+    const injStr = `${injectionsInWeek.length}/${expectedInjections || '?'}`;
+
+    const weekDates = [];
+    const d = new Date(startOfWeek);
+    while (d <= now) {
+      weekDates.push(formatDateLocal(new Date(d)));
+      d.setDate(d.getDate() + 1);
+    }
+    const hydratedDays = weekDates.filter(date => dailyTrackEntries.some(e => e.date === date)).length;
+    const hydrationStr = `${hydratedDays}/7 days`;
+
+    const glucoseInWeek = glucoseEntries.filter(e => e.date >= startStr && e.date <= todayStr);
+    const avgGlucose = glucoseInWeek.length ? (glucoseInWeek.reduce((s, e) => s + parseFloat(e.value), 0) / glucoseInWeek.length).toFixed(0) : null;
+    const lastGlucose = glucoseEntries.length ? sortByDateDesc(glucoseEntries)[0] : null;
+
+    const lastA1c = a1cEntries.length ? sortByDateDesc(a1cEntries)[0] : null;
+
+    return { weightStr, injStr, hydrationStr, avgGlucose, lastGlucose, lastA1c };
   };
 
   const calculateBMI = (weightLbs, heightInches) => heightInches ? ((weightLbs / (heightInches * heightInches)) * 703).toFixed(1) : null;
@@ -2403,6 +2519,7 @@ const wipeAllData = () => {
             { id: 'insights', icon: Activity, label: 'Insights' },
             { id: 'weight', icon: Scale, label: 'Weight' },
             { id: 'injections', icon: Syringe, label: 'Injections' },
+            { id: 'glucose', icon: Droplet, label: 'Glucose' },
             { id: 'more', icon: MoreHorizontal, label: 'More' }
           ].map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setShowAddForm(false); }}
@@ -2424,6 +2541,24 @@ const wipeAllData = () => {
                 </button>
               ))}
             </div>
+
+            {/* Week in review */}
+            {(() => {
+              const d = getWeeklyDigest();
+              return (
+                <div className="rounded-2xl p-4 border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-amber-600/5 backdrop-blur-sm">
+                  <h3 className="text-amber-400/90 text-sm font-medium mb-2 flex items-center gap-2"><Calendar className="h-4 w-4" />This week</h3>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-200 text-sm">
+                    <span><Scale className="h-3.5 w-3 inline mr-1 text-slate-400" />Weight {d.weightStr}</span>
+                    <span><Syringe className="h-3.5 w-3 inline mr-1 text-slate-400" />{d.injStr} injections</span>
+                    <span><Droplets className="h-3.5 w-3 inline mr-1 text-slate-400" />{d.hydrationStr} hydrated</span>
+                    {d.avgGlucose != null && <span className="text-emerald-400/90">Glucose avg {d.avgGlucose} mg/dL</span>}
+                    {d.avgGlucose == null && d.lastGlucose && <span className="text-emerald-400/90">Last glucose {d.lastGlucose.value} mg/dL</span>}
+                    {d.lastA1c && <span className="text-cyan-400/90">A1C {d.lastA1c.value}%</span>}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">Weight Change</h2>
@@ -2665,79 +2800,113 @@ const wipeAllData = () => {
               </div>
             </div>
 
-            {/* Chart */}
-            {(weightEntries.length > 0 || injectionEntries.length > 0) && (
-              <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/50 backdrop-blur-sm">
-                <ResponsiveContainer width="100%" height={450}>
-                  <LineChart data={getSummaryChartData()} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} interval={Math.max(0, Math.floor(getSummaryChartData().length / 6))} />
-                    <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} domain={['dataMin - 2', 'dataMax + 2']} orientation="right" tickFormatter={(v) => `${v} lbs`} />
-                    <YAxis yAxisId="right" orientation="left" stroke="#94a3b8" fontSize={10} hide={getLoggedMedications().length === 0} domain={[0, (dataMax) => {
-                      // Add 2-3 units buffer above max dose to prevent label cutoff
-                      const maxDose = Math.ceil(dataMax);
-                      return maxDose + 3;
-                    }]} />
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', backdropFilter: 'blur(12px)' }} 
-                      formatter={(value, name, props) => { 
-                        if (!value) return null; 
-                        if (name === 'Weight') return [`${value} lbs`, 'Weight'];
-                        if (name === 'Trend (7-day)') return [`${value.toFixed(1)} lbs`, name];
-                        const unit = props.payload?.units?.[name] || 'mg';
-                        return [`${value} ${unit}`, name]; 
-                      }} />
-                    {visibleLines.weight && (
-                      <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#f472b6" strokeWidth={3} dot={{ fill: '#f472b6', r: 5 }} connectNulls name="Weight" />
-                    )}
-                    {visibleLines.trend !== false && (
-                      <Line yAxisId="left" type="monotone" dataKey="weightTrend" stroke="#a78bfa" strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls name="Trend (7-day)" />
-                    )}
-                    {getLoggedMedications().map(med => {
-                      if (!visibleLines[med]) return null; // Hide if toggled off
-                      const recentInjection = injectionEntries.filter(inj => inj.type === med).sort((a, b) => parseLocalDate(b.date) - parseLocalDate(a.date))[0];
-                      const displayUnit = recentInjection?.unit || 'mg';
-                      return (
-                        <Line key={med} yAxisId="right" type="monotone" dataKey={med} stroke={getMedicationColor(med)} strokeWidth={2} dot={{ fill: getMedicationColor(med), r: 4 }} connectNulls name={med}
-                          label={({ x, y, value }) => {
-                            if (!value) return null;
-                            return <g><rect x={x - 22} y={y - 25} width={44} height={18} rx={4} fill={getMedicationColor(med)} opacity={0.9} /><text x={x} y={y - 12} textAnchor="middle" fill="#000" fontSize={10} fontWeight="bold">{value}{displayUnit}</text></g>;
-                          }} />
-                      );
-                    })}
-                  </LineChart>
-                </ResponsiveContainer>
-                {/* Interactive Legend */}
-                <div className="flex flex-wrap gap-4 mt-3 justify-center">
-                  <button 
-                    onClick={() => setVisibleLines(prev => ({ ...prev, weight: !prev.weight }))}
-                    className={`flex items-center gap-2 px-2 py-1 rounded transition-all ${visibleLines.weight ? 'opacity-100' : 'opacity-40'}`}
-                  >
-                    <div className={`w-3 h-3 rounded-full ${visibleLines.weight ? 'bg-pink-400' : 'bg-slate-600'}`}></div>
-                    <span className={`text-xs ${visibleLines.weight ? 'text-slate-200' : 'text-slate-500'}`}>Weight</span>
-                  </button>
-                  <button 
-                    onClick={() => setVisibleLines(prev => ({ ...prev, trend: !prev.trend }))}
-                    className={`flex items-center gap-2 px-2 py-1 rounded transition-all ${visibleLines.trend !== false ? 'opacity-100' : 'opacity-40'}`}
-                  >
-                    <div className={`w-3 h-3 rounded-full ${visibleLines.trend !== false ? 'bg-violet-400' : 'bg-slate-600'}`}></div>
-                    <span className={`text-xs ${visibleLines.trend !== false ? 'text-slate-200' : 'text-slate-500'}`}>Trend (7-day)</span>
-                  </button>
-                  {getLoggedMedications().map(med => {
-                    // Initialize visibility for new medications
-                    if (visibleLines[med] === undefined) {
-                      setVisibleLines(prev => ({ ...prev, [med]: true }));
-                    }
-                    return (
-                      <button 
-                        key={med}
-                        onClick={() => setVisibleLines(prev => ({ ...prev, [med]: !prev[med] }))}
-                        className={`flex items-center gap-2 px-2 py-1 rounded transition-all ${visibleLines[med] ? 'opacity-100' : 'opacity-40'}`}
-                      >
-                        <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: visibleLines[med] ? getMedicationColor(med) : '#475569' }}></div>
-                        <span className={`text-xs ${visibleLines[med] ? 'text-slate-200' : 'text-slate-500'}`}>{med}</span>
-                      </button>
-                    );
-                  })}
+            {/* Weight chart — clean, modern */}
+            {weightEntries.length > 0 && (
+              <div className="rounded-2xl overflow-hidden border border-white/[0.06] bg-slate-800/40 backdrop-blur-sm">
+                <div className="px-5 pt-5 pb-1">
+                  <h3 className="text-slate-300 text-sm font-medium mb-4">Weight over time</h3>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <ComposedChart data={getSummaryChartData()} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
+                      <defs>
+                        <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.2} />
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="0" stroke="#334155" vertical={false} strokeOpacity={0.4} />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        stroke="#64748b" 
+                        fontSize={11} 
+                        tickMargin={8}
+                        interval="preserveStartEnd"
+                        minTickGap={32}
+                      />
+                      <YAxis 
+                        yAxisId="weight"
+                        axisLine={false} 
+                        tickLine={false} 
+                        stroke="#64748b" 
+                        fontSize={11} 
+                        tickMargin={8}
+                        width={36}
+                        domain={['dataMin - 2', 'dataMax + 2']}
+                        tickFormatter={(v) => `${v}`}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(15, 23, 42, 0.96)', 
+                          border: '1px solid rgba(71, 85, 105, 0.5)', 
+                          borderRadius: '10px', 
+                          padding: '10px 14px',
+                          boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                        }} 
+                        labelStyle={{ color: '#94a3b8', fontSize: 12 }}
+                        formatter={(value, name) => { 
+                          if (value == null) return null; 
+                          if (name === 'Weight') return [value, 'Weight (lbs)'];
+                          if (name === '7-day average') return [value?.toFixed?.(1) ?? value, '7-day avg (lbs)'];
+                          return [value, name]; 
+                        }} 
+                        labelFormatter={(label) => label}
+                      />
+                      {visibleLines.weight && (
+                        <Area 
+                          yAxisId="weight" 
+                          type="monotone" 
+                          dataKey="weight" 
+                          fill="url(#weightFill)" 
+                          stroke="none" 
+                          isAnimationActive={true}
+                          connectNulls 
+                        />
+                      )}
+                      {visibleLines.weight && (
+                        <Line 
+                          yAxisId="weight" 
+                          type="monotone" 
+                          dataKey="weight" 
+                          stroke="#f59e0b" 
+                          strokeWidth={2.5} 
+                          dot={{ fill: '#0f172a', stroke: '#f59e0b', strokeWidth: 2, r: 4 }} 
+                          activeDot={{ r: 5, stroke: '#f59e0b', strokeWidth: 2, fill: '#0f172a' }}
+                          connectNulls 
+                          name="Weight"
+                        />
+                      )}
+                      {visibleLines.trend !== false && (
+                        <Line 
+                          yAxisId="weight" 
+                          type="monotone" 
+                          dataKey="weightTrend" 
+                          stroke="#64748b" 
+                          strokeWidth={1.5} 
+                          strokeDasharray="6 4" 
+                          dot={false} 
+                          connectNulls 
+                          name="7-day average"
+                        />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                  <div className="flex items-center justify-center gap-6 mt-3 pt-3 border-t border-white/[0.04]">
+                    <button 
+                      onClick={() => setVisibleLines(prev => ({ ...prev, weight: !prev.weight }))}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${visibleLines.weight ? 'bg-amber-500/15 text-amber-400' : 'text-slate-500'}`}
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full ${visibleLines.weight ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                      Weight
+                    </button>
+                    <button 
+                      onClick={() => setVisibleLines(prev => ({ ...prev, trend: !prev.trend }))}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${visibleLines.trend !== false ? 'bg-slate-500/15 text-slate-300' : 'text-slate-500'}`}
+                    >
+                      <span className={`inline-block w-5 h-0.5 rounded-full ${visibleLines.trend !== false ? 'bg-slate-400' : 'bg-slate-600'}`} />
+                      7-day average
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -3505,6 +3674,109 @@ const wipeAllData = () => {
           </div>
         )}
 
+        {/* GLUCOSE TAB - same prominence as Weight & Injections */}
+        {activeTab === 'glucose' && (
+          <div className="space-y-4 tab-enter">
+            <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
+              <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2"><Droplet className="h-6 w-6 text-emerald-400" />Glucose & A1C</h2>
+              <p className="text-slate-400 text-sm mb-4">Log blood sugar and A1C. Shown in &quot;This week&quot; on Summary.</p>
+
+              {/* Log Glucose */}
+              <div className="mb-4">
+                {!showGlucoseForm ? (
+                  <button onClick={() => setShowGlucoseForm(true)} className="w-full py-3 rounded-xl border-2 border-dashed border-slate-500 text-slate-400 hover:text-white hover:border-emerald-500/50 text-sm font-medium flex items-center justify-center gap-2"><Plus className="h-4 w-4" />Log glucose</button>
+                ) : (
+                  <div className="rounded-xl p-4 bg-slate-700/50 space-y-3">
+                    <div className="flex gap-2">
+                      <input type="number" step="1" min="20" max="500" value={glucoseValue} onChange={(e) => setGlucoseValue(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-4 py-3 text-lg" placeholder="mg/dL" />
+                      <select value={glucoseType} onChange={(e) => setGlucoseType(e.target.value)} className="bg-slate-700 text-white rounded-lg px-3 py-3 text-sm">
+                        <option value="fasting">Fasting</option>
+                        <option value="post_meal">Post-meal</option>
+                        <option value="random">Random</option>
+                      </select>
+                    </div>
+                    <input type="date" value={glucoseDate} onChange={(e) => setGlucoseDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" />
+                    <div className="flex gap-2">
+                      <button onClick={addGlucose} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-medium">Add</button>
+                      <button onClick={() => { setShowGlucoseForm(false); setGlucoseValue(''); }} className="px-4 py-3 text-slate-400 hover:text-white rounded-lg">Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {glucoseEntries.length > 0 && (
+                <>
+                  <h3 className="text-slate-300 font-medium mb-2">Glucose trend (last 14 days)</h3>
+                  <div className="mb-4 h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={(() => {
+                        const now = new Date();
+                        const points = [];
+                        for (let i = 13; i >= 0; i--) {
+                          const d = new Date(now);
+                          d.setDate(d.getDate() - i);
+                          const dateStr = formatDateLocal(d);
+                          const dayEntries = glucoseEntries.filter(e => e.date === dateStr);
+                          const avg = dayEntries.length ? (dayEntries.reduce((s, e) => s + parseFloat(e.value), 0) / dayEntries.length).toFixed(0) : null;
+                          points.push({ date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), fullDate: dateStr, value: avg != null ? parseInt(avg, 10) : null });
+                        }
+                        return points;
+                      })()}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                        <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
+                        <YAxis stroke="#94a3b8" fontSize={10} domain={[60, 180]} />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(30,41,59,0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }} formatter={(v) => [v != null ? `${v} mg/dL` : '—', 'Glucose']} />
+                        <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} connectNulls name="Glucose" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {sortByDateDesc(glucoseEntries).slice(0, 20).map(e => (
+                      <div key={e.id} className="flex items-center justify-between py-2 border-b border-white/5">
+                        <span className="text-slate-300">{parseLocalDate(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {e.type === 'fasting' ? 'Fasting' : e.type === 'post_meal' ? 'Post-meal' : 'Random'}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{e.value} mg/dL</span>
+                          <button onClick={() => deleteGlucose(e.id)} className="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-600"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* A1C */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <h3 className="text-slate-300 font-medium mb-2">A1C</h3>
+                {!showA1cForm ? (
+                  <button onClick={() => setShowA1cForm(true)} className="w-full py-3 rounded-xl border-2 border-dashed border-slate-500 text-slate-400 hover:text-white hover:border-cyan-500/50 text-sm font-medium flex items-center justify-center gap-2"><Plus className="h-4 w-4" />Log A1C</button>
+                ) : (
+                  <div className="rounded-xl p-4 bg-slate-700/50 space-y-3">
+                    <input type="number" step="0.1" min="4" max="15" value={a1cValue} onChange={(e) => setA1cValue(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3 text-lg" placeholder="A1C %" />
+                    <input type="date" value={a1cDate} onChange={(e) => setA1cDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-4 py-3" />
+                    <div className="flex gap-2">
+                      <button onClick={addA1c} className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white py-3 rounded-lg font-medium">Add</button>
+                      <button onClick={() => { setShowA1cForm(false); setA1cValue(''); }} className="px-4 py-3 text-slate-400 hover:text-white rounded-lg">Cancel</button>
+                    </div>
+                  </div>
+                )}
+                {a1cEntries.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {sortByDateDesc(a1cEntries).map(e => (
+                      <div key={e.id} className="flex items-center justify-between py-2 border-b border-white/5">
+                        <span className="text-slate-300">{parseLocalDate(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-cyan-400 font-medium">{e.value}%</span>
+                          <button onClick={() => deleteA1c(e.id)} className="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-600"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MORE TAB */}
         {activeTab === 'more' && (
           <div className="space-y-4 tab-enter">
@@ -3741,6 +4013,7 @@ const wipeAllData = () => {
                 { id: 'calculator', label: 'Calculators' }, 
                 { id: 'schedule', label: 'Schedules' }, 
                 { id: 'titration', label: 'Titration' }, 
+                { id: 'glucose', label: 'Glucose & A1C' }, 
                 { id: 'notifications', label: 'Notifications' }, 
                 { id: 'data', label: 'Data' }
               ].map(section => (
@@ -4098,6 +4371,109 @@ const wipeAllData = () => {
                     })}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Glucose & A1C Section */}
+            {activeToolSection === 'glucose' && (
+              <div className="space-y-4">
+                <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
+                  <h3 className="text-white font-medium mb-4 flex items-center gap-2"><Activity className="h-5 w-5 text-emerald-400" />Glucose & A1C</h3>
+                  <p className="text-slate-400 text-sm mb-4">Optional log for people using GLP-1s or managing blood sugar. Shown in Week in review on Summary.</p>
+
+                  {/* Log Glucose */}
+                  <div className="mb-4">
+                    {!showGlucoseForm ? (
+                      <button onClick={() => setShowGlucoseForm(true)} className="w-full py-2 rounded-lg border border-dashed border-slate-500 text-slate-400 hover:text-white hover:border-emerald-500/50 text-sm">+ Log glucose</button>
+                    ) : (
+                      <div className="rounded-xl p-3 bg-slate-700/50 space-y-2">
+                        <div className="flex gap-2">
+                          <input type="number" step="1" min="20" max="500" value={glucoseValue} onChange={(e) => setGlucoseValue(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-3 py-2" placeholder="mg/dL" />
+                          <select value={glucoseType} onChange={(e) => setGlucoseType(e.target.value)} className="bg-slate-700 text-white rounded-lg px-2 py-2 text-sm">
+                            <option value="fasting">Fasting</option>
+                            <option value="post_meal">Post-meal</option>
+                            <option value="random">Random</option>
+                          </select>
+                        </div>
+                        <input type="date" value={glucoseDate} onChange={(e) => setGlucoseDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" />
+                        <div className="flex gap-2">
+                          <button onClick={addGlucose} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium">Add</button>
+                          <button onClick={() => { setShowGlucoseForm(false); setGlucoseValue(''); }} className="px-3 py-2 text-slate-400 hover:text-white rounded-lg text-sm">Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Glucose list & chart */}
+                  {glucoseEntries.length > 0 && (
+                    <>
+                      <h4 className="text-slate-300 text-sm font-medium mb-2">Glucose trend (last 14 days)</h4>
+                      <div className="mb-4 h-40">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={(() => {
+                            const now = new Date();
+                            const points = [];
+                            for (let i = 13; i >= 0; i--) {
+                              const d = new Date(now);
+                              d.setDate(d.getDate() - i);
+                              const dateStr = formatDateLocal(d);
+                              const dayEntries = glucoseEntries.filter(e => e.date === dateStr);
+                              const avg = dayEntries.length ? (dayEntries.reduce((s, e) => s + parseFloat(e.value), 0) / dayEntries.length).toFixed(0) : null;
+                              points.push({ date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), fullDate: dateStr, value: avg != null ? parseInt(avg, 10) : null });
+                            }
+                            return points;
+                          })()}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                            <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
+                            <YAxis stroke="#94a3b8" fontSize={10} domain={[60, 180]} />
+                            <Tooltip contentStyle={{ backgroundColor: 'rgba(30,41,59,0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }} formatter={(v) => [v != null ? `${v} mg/dL` : '—', 'Glucose']} />
+                            <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 3 }} connectNulls name="Glucose" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {sortByDateDesc(glucoseEntries).slice(0, 14).map(e => (
+                          <div key={e.id} className="flex items-center justify-between py-1.5 border-b border-white/5">
+                            <span className="text-slate-300 text-sm">{parseLocalDate(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {e.type === 'fasting' ? 'Fasting' : e.type === 'post_meal' ? 'Post-meal' : 'Random'}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-medium">{e.value} mg/dL</span>
+                              <button onClick={() => deleteGlucose(e.id)} className="text-slate-400 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Log A1C */}
+                  <div className="mt-6 pt-4 border-t border-white/5">
+                    {!showA1cForm ? (
+                      <button onClick={() => setShowA1cForm(true)} className="w-full py-2 rounded-lg border border-dashed border-slate-500 text-slate-400 hover:text-white hover:border-cyan-500/50 text-sm">+ Log A1C</button>
+                    ) : (
+                      <div className="rounded-xl p-3 bg-slate-700/50 space-y-2">
+                        <input type="number" step="0.1" min="4" max="15" value={a1cValue} onChange={(e) => setA1cValue(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2" placeholder="A1C %" />
+                        <input type="date" value={a1cDate} onChange={(e) => setA1cDate(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" />
+                        <div className="flex gap-2">
+                          <button onClick={addA1c} className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-medium">Add</button>
+                          <button onClick={() => { setShowA1cForm(false); setA1cValue(''); }} className="px-3 py-2 text-slate-400 hover:text-white rounded-lg text-sm">Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {a1cEntries.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {sortByDateDesc(a1cEntries).map(e => (
+                        <div key={e.id} className="flex items-center justify-between py-1.5 border-b border-white/5">
+                          <span className="text-slate-300 text-sm">{parseLocalDate(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-cyan-400 font-medium">{e.value}%</span>
+                            <button onClick={() => deleteA1c(e.id)} className="text-slate-400 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
