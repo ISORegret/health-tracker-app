@@ -118,6 +118,20 @@
       margin-top: 0.4rem;
       line-height: 1.3;
     }
+    .hero .value-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .hero .value-strip span { color: var(--accent); opacity: 0.9; }
+    .hero .value-strip .dot { opacity: 0.4; user-select: none; }
     .hero .btns {
       display: flex;
       align-items: center;
@@ -168,7 +182,23 @@
       border-color: var(--accent);
     }
 
-    /* Features — section header + editorial list (matches hero hierarchy) */
+    /* Value strip — one line punch */
+    .value-block {
+      flex-shrink: 0;
+      text-align: center;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem 0;
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, rgba(212, 168, 83, 0.08), rgba(212, 168, 83, 0.02));
+      border: 1px solid rgba(212, 168, 83, 0.15);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+    }
+    .value-block strong { color: var(--accent); font-weight: 700; }
+
+    /* Features — benefit sections (MeAgain/Glapp style) */
     .features-wrap {
       flex: 1;
       min-height: 0;
@@ -203,39 +233,72 @@
       font-size: 0.85rem;
       line-height: 1.5;
       max-width: 420px;
-      margin: 0 auto 1rem;
+      margin: 0 auto 0.75rem;
     }
-    .features {
+    .benefit-sections {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 0 2.5rem;
-      max-width: 640px;
+      gap: 0.75rem;
+      max-width: 700px;
       width: 100%;
       flex: 1;
       min-height: 0;
       text-align: left;
     }
-    .feature {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--border);
-      transition: border-color 0.2s;
+    .benefit-block {
+      padding: 0.85rem 1rem;
+      border-radius: 0.875rem;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
-    .feature:last-child,
-    .feature:nth-last-child(2):nth-child(odd) { border-bottom: none; }
-    .feature:hover { border-color: rgba(212, 168, 83, 0.2); }
-    .feature-title {
-      font-size: 0.9rem;
-      font-weight: 700;
+    .benefit-block:hover {
+      border-color: rgba(212, 168, 83, 0.25);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      transform: translateY(-2px);
+    }
+    .benefit-block h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text);
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
-    .feature-desc {
+    .benefit-block h3::before {
+      content: '';
+      width: 3px;
+      height: 1em;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--accent), rgba(212, 168, 83, 0.5));
+    }
+    .benefit-block .benefit-desc {
       color: var(--text-muted);
+      font-size: 0.75rem;
+      line-height: 1.45;
+      margin-bottom: 0.6rem;
+    }
+    .benefit-block ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .benefit-block li {
       font-size: 0.8rem;
-      line-height: 1.4;
+      color: var(--text-muted);
+      padding: 0.2rem 0;
+      padding-left: 1rem;
+      position: relative;
+    }
+    .benefit-block li::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
     }
 
     /* Screenshots row — larger, sharper thumbnails */
@@ -311,10 +374,7 @@
 
     /* Responsive */
     @media (max-width: 600px) {
-      .features { grid-template-columns: 1fr; gap: 0 0; max-width: 360px; }
-      .feature { border-bottom: 1px solid var(--border); }
-      .feature:last-child { border-bottom: none; }
-      .feature:nth-last-child(2):nth-child(odd) { border-bottom: 1px solid var(--border); }
+      .benefit-sections { grid-template-columns: 1fr; max-width: 360px; }
       .screens-row { flex-wrap: wrap; justify-content: center; }
       .page { overflow-y: auto; overflow-x: hidden; }
     }
@@ -369,6 +429,7 @@
       <h1 class="logo">PepTalk</h1>
       <p class="tagline">Weight · Injections · Glucose · Measurements · Tools</p>
       <h2>Track your health journey in one place</h2>
+      <p class="value-strip"><span>Track</span> <span class="dot">·</span> <span>Remind</span> <span class="dot">·</span> <span>Review</span></p>
       <div class="btns">
         <a href="PepTalk.apk" class="btn-download" download="PepTalk.apk">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -380,52 +441,48 @@
       </div>
     </section>
 
+    <p class="value-block"><strong>One app.</strong> No account. <strong>Your data stays yours.</strong></p>
+
     <div class="features-wrap">
       <header class="features-header">
-        <span class="features-label">Features</span>
+        <span class="features-label">What’s inside</span>
         <h2 class="features-headline">Everything you need</h2>
-        <p class="features-desc">Weight, injections, glucose, insights, and tools — one place, no clutter.</p>
+        <p class="features-desc">Log once. See the full picture. Stay on schedule.</p>
       </header>
-      <div class="features">
-        <div class="feature">
-          <span class="feature-title">Weight & trends</span>
-          <p class="feature-desc">Log weight, charts, goals, BMI.</p>
+      <div class="benefit-sections">
+        <div class="benefit-block">
+          <h3>Log with ease</h3>
+          <p class="benefit-desc">Weight, shots, and glucose in one place.</p>
+          <ul>
+            <li>Weight & trends — charts, goals, BMI</li>
+            <li>Injections & schedules — doses, sites, split dosing</li>
+            <li>Glucose & A1C — fasting, random, trends</li>
+          </ul>
         </div>
-        <div class="feature">
-          <span class="feature-title">Injections & schedules</span>
-          <p class="feature-desc">Doses, sites, split dosing, reminders.</p>
+        <div class="benefit-block">
+          <h3>See the big picture</h3>
+          <p class="benefit-desc">Know where you're at and what to expect.</p>
+          <ul>
+            <li>Summary dashboard — weight change, 7-day average</li>
+            <li>Insights & body phase — cycle awareness</li>
+          </ul>
         </div>
-        <div class="feature">
-          <span class="feature-title">Glucose & A1C</span>
-          <p class="feature-desc">Log fasting/random glucose, A1C trends.</p>
+        <div class="benefit-block">
+          <h3>Tools that fit</h3>
+          <p class="benefit-desc">Measurements, calculators, and reminders.</p>
+          <ul>
+            <li>Body measurements — waist, progress photos</li>
+            <li>Calculators — BMI, TDEE, doctor summary</li>
+            <li>Reminders — even when the app is closed</li>
+          </ul>
         </div>
-        <div class="feature">
-          <span class="feature-title">Summary dashboard</span>
-          <p class="feature-desc">Weight change, 7-day average, injection markers.</p>
-        </div>
-        <div class="feature">
-          <span class="feature-title">Insights & body phase</span>
-          <p class="feature-desc">Where you're at in your cycle, what to expect.</p>
-        </div>
-        <div class="feature">
-          <span class="feature-title">Body measurements</span>
-          <p class="feature-desc">Waist, progress photos, timeline.</p>
-        </div>
-        <div class="feature">
-          <span class="feature-title">Calculators & tools</span>
-          <p class="feature-desc">BMI, TDEE, schedules, doctor summary.</p>
-        </div>
-        <div class="feature">
-          <span class="feature-title">Reminders</span>
-          <p class="feature-desc">Notifications even when app is closed.</p>
-        </div>
-        <div class="feature">
-          <span class="feature-title">Peptides & hormones</span>
-          <p class="feature-desc">Semaglutide, tirzepatide, BPC-157, testosterone, HCG, and more.</p>
-        </div>
-        <div class="feature">
-          <span class="feature-title">Private by design</span>
-          <p class="feature-desc">Data stays on your device. No account.</p>
+        <div class="benefit-block">
+          <h3>Built for your stack</h3>
+          <p class="benefit-desc">GLP-1s, peptides, hormones. Private by design.</p>
+          <ul>
+            <li>Semaglutide, tirzepatide, BPC-157, testosterone, HCG, and more</li>
+            <li>Data stays on your device — no account</li>
+          </ul>
         </div>
       </div>
 
