@@ -4,7 +4,7 @@ import { ComposedChart, LineChart, Line, Area, XAxis, YAxis, CartesianGrid, Tool
 import { Scale, Syringe, Plus, TrendingDown, TrendingUp, Calendar, Trash2, Edit2, X, Activity, Calculator, LayoutDashboard, Wrench, ChevronDown, Bell, Ruler, Camera, Target, Clock, CheckCircle, AlertCircle, BookOpen, Smile, Meh, Frown, Zap, CalendarDays, Droplets, Beef, FileDown, MoreHorizontal, Trophy, UtensilsCrossed, Droplet } from 'lucide-react';
 import { MEDICATION_EFFECT_PROFILES, MEDICATION_PHASE_TIMELINES } from './medicationInsights';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 
 // Comprehensive peptide/medication list with pharmacokinetic data
 const MEDICATIONS = [
@@ -92,26 +92,72 @@ const TYPICAL_WEEKLY_LOSS = {
 const COMMON_FOODS = {
   'egg': { cal: 70, protein: 6, carbs: 0.5, fat: 5 },
   'eggs': { cal: 70, protein: 6, carbs: 0.5, fat: 5 },
+  'toast': { cal: 80, protein: 3, carbs: 14, fat: 1 },
+  'bread': { cal: 80, protein: 3, carbs: 14, fat: 1 },
   'chicken breast': { cal: 165, protein: 31, carbs: 0, fat: 4 },
   'chicken thigh': { cal: 209, protein: 26, carbs: 0, fat: 11 },
+  'chicken': { cal: 165, protein: 31, carbs: 0, fat: 4 },
+  'turkey': { cal: 135, protein: 30, carbs: 0, fat: 1 },
   'salmon': { cal: 208, protein: 20, carbs: 0, fat: 13 },
+  'tilapia': { cal: 110, protein: 23, carbs: 0, fat: 2 },
+  'shrimp': { cal: 100, protein: 24, carbs: 0.5, fat: 0.3 },
+  'tuna': { cal: 130, protein: 28, carbs: 0, fat: 1 },
   'ground beef': { cal: 215, protein: 24, carbs: 0, fat: 13 },
+  'steak': { cal: 270, protein: 26, carbs: 0, fat: 17 },
+  'bacon': { cal: 45, protein: 3, carbs: 0, fat: 3 },
+  'pork chop': { cal: 250, protein: 26, carbs: 0, fat: 15 },
   'greek yogurt': { cal: 100, protein: 17, carbs: 6, fat: 0.7 },
+  'yogurt': { cal: 100, protein: 10, carbs: 15, fat: 2 },
   'cottage cheese': { cal: 120, protein: 14, carbs: 6, fat: 5 },
   'protein shake': { cal: 120, protein: 24, carbs: 3, fat: 1 },
+  'protein bar': { cal: 200, protein: 20, carbs: 22, fat: 6 },
   'oatmeal': { cal: 150, protein: 5, carbs: 27, fat: 3 },
+  'oats': { cal: 150, protein: 5, carbs: 27, fat: 3 },
   'rice': { cal: 205, protein: 4, carbs: 45, fat: 0.4 },
+  'quinoa': { cal: 220, protein: 8, carbs: 39, fat: 4 },
+  'pasta': { cal: 220, protein: 8, carbs: 43, fat: 1 },
   'sweet potato': { cal: 103, protein: 2, carbs: 24, fat: 0 },
+  'potato': { cal: 160, protein: 2, carbs: 37, fat: 0 },
   'broccoli': { cal: 55, protein: 4, carbs: 11, fat: 0.6 },
   'spinach': { cal: 23, protein: 3, carbs: 4, fat: 0.4 },
+  'kale': { cal: 35, protein: 3, carbs: 4, fat: 1 },
+  'asparagus': { cal: 20, protein: 2, carbs: 4, fat: 0 },
+  'green beans': { cal: 35, protein: 2, carbs: 8, fat: 0 },
+  'carrots': { cal: 25, protein: 1, carbs: 6, fat: 0 },
+  'cauliflower': { cal: 25, protein: 2, carbs: 5, fat: 0 },
   'salad': { cal: 50, protein: 3, carbs: 8, fat: 1 },
   'chicken salad': { cal: 350, protein: 30, carbs: 12, fat: 20 },
+  'caesar salad': { cal: 360, protein: 12, carbs: 18, fat: 28 },
   'avocado': { cal: 240, protein: 3, carbs: 13, fat: 22 },
   'banana': { cal: 105, protein: 1, carbs: 27, fat: 0.4 },
   'apple': { cal: 95, protein: 0.5, carbs: 25, fat: 0.3 },
+  'orange': { cal: 62, protein: 1, carbs: 15, fat: 0.2 },
+  'berries': { cal: 50, protein: 1, carbs: 12, fat: 0.3 },
+  'strawberries': { cal: 50, protein: 1, carbs: 12, fat: 0.3 },
+  'blueberries': { cal: 85, protein: 1, carbs: 21, fat: 0.5 },
+  'grapefruit': { cal: 52, protein: 1, carbs: 13, fat: 0.2 },
+  'pear': { cal: 100, protein: 1, carbs: 27, fat: 0.2 },
+  'nuts': { cal: 170, protein: 6, carbs: 6, fat: 15 },
+  'almonds': { cal: 170, protein: 6, carbs: 6, fat: 15 },
+  'peanut butter': { cal: 190, protein: 8, carbs: 7, fat: 16 },
+  'hummus': { cal: 70, protein: 2, carbs: 6, fat: 5 },
+  'cheese': { cal: 110, protein: 7, carbs: 1, fat: 9 },
+  'milk': { cal: 150, protein: 8, carbs: 12, fat: 8 },
+  'almond milk': { cal: 40, protein: 1, carbs: 2, fat: 3 },
+  'smoothie': { cal: 200, protein: 5, carbs: 35, fat: 5 },
+  'soup': { cal: 120, protein: 6, carbs: 15, fat: 4 },
+  'chicken soup': { cal: 90, protein: 8, carbs: 8, fat: 3 },
+  'burger': { cal: 350, protein: 20, carbs: 30, fat: 18 },
+  'pizza': { cal: 285, protein: 12, carbs: 36, fat: 10 },
+  'sandwich': { cal: 350, protein: 18, carbs: 40, fat: 12 },
+  'taco': { cal: 170, protein: 8, carbs: 13, fat: 10 },
+  'burrito': { cal: 500, protein: 22, carbs: 55, fat: 22 },
   'coffee': { cal: 2, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 },
   'water': { cal: 0, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 },
-  'tea': { cal: 2, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 }
+  'tea': { cal: 2, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 },
+  'soda': { cal: 140, protein: 0, carbs: 39, fat: 0, hydrationOz: 12 },
+  'juice': { cal: 110, protein: 1, carbs: 26, fat: 0, hydrationOz: 8 },
+  'energy drink': { cal: 110, protein: 0, carbs: 28, fat: 0, hydrationOz: 8 }
 };
 
 function estimateMealFromDescription(desc) {
@@ -1959,6 +2005,35 @@ const wipeAllData = () => {
     return { med: lastInjection.type, dose: `${lastInjection.dose}${lastInjection.unit}`, typical, userLoss, status };
   };
 
+  // Chart data: your cumulative weight loss vs typical (clinical trial) cumulative loss by week (up to 1 week past current)
+  const getYouVsTypicalChartData = () => {
+    const onTrack = getOnTrackInfo();
+    if (!onTrack) return [];
+    const filtered = getFilteredData(weightEntries);
+    const sorted = sortWeightByDateAsc(filtered);
+    if (sorted.length < 2) return [];
+    const startDate = parseLocalDate(sorted[0].date);
+    const startWeight = parseFloat(sorted[0].weight);
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const currentWeekIndex = Math.floor((now - startDate) / msPerWeek);
+    const weeksTotal = Math.max(1, currentWeekIndex + 1); // only up to 1 week past where we are now
+    const points = [];
+    for (let w = 0; w <= weeksTotal; w++) {
+      const weekEnd = new Date(startDate);
+      weekEnd.setDate(weekEnd.getDate() + w * 7);
+      const weekLabel = w === 0 ? 'Start' : `Week ${w}`;
+      const typicalLoss = onTrack.typical * w;
+      const weightsUpToWeekEnd = sorted.filter(e => parseLocalDate(e.date) <= weekEnd);
+      const latestInWindow = weightsUpToWeekEnd.length ? weightsUpToWeekEnd[weightsUpToWeekEnd.length - 1] : null;
+      const userLoss = latestInWindow ? Math.max(0, startWeight - parseFloat(latestInWindow.weight)) : (w === 0 ? 0 : null);
+      if (userLoss !== null || w === 0) {
+        points.push({ weekLabel, weeks: w, userLoss: userLoss ?? 0, typicalLoss });
+      }
+    }
+    return points.length > 1 ? points : [];
+  };
+
   // Milestones: 5 lb down, 10 lb down, ... from start weight toward goal
   const getMilestones = () => {
     const sorted = sortWeightByDateAsc(weightEntries);
@@ -2715,6 +2790,27 @@ const wipeAllData = () => {
                     </div>
                   );
                 })()}
+              </div>
+            )}
+
+            {/* Your loss vs typical — cumulative weight loss chart */}
+            {getYouVsTypicalChartData().length > 0 && (
+              <div className="rounded-2xl overflow-hidden border border-white/[0.06] bg-slate-800/40 backdrop-blur-sm">
+                <div className="px-5 pt-5 pb-1">
+                  <h3 className="text-slate-300 text-sm font-medium mb-1">Your loss vs typical</h3>
+                  <p className="text-slate-500 text-xs mb-4">Cumulative lbs lost: you vs average for your medication (clinical trials).</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ComposedChart data={getYouVsTypicalChartData()} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="0" stroke="#334155" vertical={false} strokeOpacity={0.4} />
+                      <XAxis dataKey="weekLabel" axisLine={false} tickLine={false} stroke="#64748b" fontSize={11} tickMargin={8} interval="preserveStartEnd" minTickGap={24} />
+                      <YAxis axisLine={false} tickLine={false} stroke="#64748b" fontSize={11} tickMargin={8} width={32} domain={[0, 'auto']} tickFormatter={(v) => `${v}`} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.96)', border: '1px solid rgba(71, 85, 105, 0.5)', borderRadius: '10px', padding: '8px 12px' }} labelStyle={{ color: '#94a3b8', fontSize: 12 }} formatter={(value) => [value != null ? value.toFixed(1) : '-', '']} labelFormatter={(label, payload) => payload?.[0]?.payload?.weekLabel ? `${payload[0].payload.weekLabel} — You: ${(payload[0].payload.userLoss ?? 0).toFixed(1)} lb, Typical: ${(payload[0].payload.typicalLoss ?? 0).toFixed(1)} lb` : label} />
+                      <Line type="monotone" dataKey="userLoss" name="You" stroke="#f59e0b" strokeWidth={2.5} dot={{ fill: '#f59e0b', r: 3 }} connectNulls />
+                      <Line type="monotone" dataKey="typicalLoss" name="Typical" stroke="#64748b" strokeWidth={2} strokeDasharray="4 4" dot={{ fill: '#64748b', r: 2 }} connectNulls />
+                      <Legend wrapperStyle={{ fontSize: 11 }} formatter={(value) => <span className="text-slate-300">{value}</span>} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             )}
 
