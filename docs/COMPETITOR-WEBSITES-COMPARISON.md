@@ -100,4 +100,32 @@ Searched and compared landing pages for **Shotsy** (shotsyapp.com), **GLPer** (g
 
 ---
 
+## They show vs we show (quick view)
+
+| Feature | Shotsy | GLPer | Onederland | MeAgain | Glapp | **PepTalk** |
+|--------|--------|-------|------------|---------|-------|--------------|
+| **They show, we're missing** | | | | | | |
+| Apple Health / Google Fit sync | Yes | Yes | Yes | Yes | — | **No** |
+| Side-effect calendar + per dose | Yes | Yes | — | — | — | **Partial** (journal) |
+| Pen/vial lifecycle (expiry) | — | Yes | — | — | — | **No** |
+| 500+ recipes / meal plans | — | Yes | — | — | — | **No** |
+| AI meal / barcode | — | — | Yes | Yes | — | **No** |
+| 3D body compare / share | — | — | Yes | — | — | **No** |
+| Sleep + activity overlay | — | — | Yes | — | — | **No** |
+| Q&A / “ask GLP-1 questions” | — | — | — | — | Yes | **No** |
+| Testimonials + star count | Yes | — | — | Yes | Yes | **No** |
+| Fiber goal | — | — | — | Yes | — | **No** |
+| **We show, they're missing or weaker** | | | | | | |
+| Phase timelines + medication curves | No | No | Partial | No | Yes | **Yes** (more meds) |
+| On track vs typical loss | No | No | No | No | Yes | **Yes** |
+| Constitute + JSON/CSV/PDF export | PDF | — | PDF/CSV | — | — | **Yes** (all three) |
+| No account, local-only | No | No | Partial | No | Yes | **Yes** |
+| GLP-1 + peptides + TRT in one app | GLP-1 | GLP-1 | GLP-1 | GLP-1 | GLP-1 | **Yes** |
+| Glucose & A1C logging | — | — | Yes | — | — | **Yes** |
+| Rybelsus / oral GLP-1 | — | — | — | — | — | **Yes** |
+| Titration plan builder | — | — | — | — | — | **Yes** |
+| Split-dose tips (e.g. Retatrutide, Test) | — | — | — | — | — | **Yes** |
+
+---
+
 **Links used:** [Shotsy](https://shotsyapp.com/), [GLPer](https://glper.com/), [Onederland](https://onederland.fit/), [MeAgain](https://meagain.app/), [Glapp](https://glapp.io/).
