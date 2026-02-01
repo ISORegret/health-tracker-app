@@ -168,7 +168,7 @@
       border-color: var(--accent);
     }
 
-    /* Features grid — all in one view */
+    /* Features — section header + editorial list (matches hero hierarchy) */
     .features-wrap {
       flex: 1;
       min-height: 0;
@@ -176,60 +176,66 @@
       flex-direction: column;
       align-items: center;
       padding: 0.5rem 0;
-    }
-    .section-title {
-      font-size: clamp(0.85rem, 2vw, 1rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
       text-align: center;
+    }
+    .features-header .features-label {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(212, 168, 83, 0.2);
+      margin-bottom: 0.5rem;
+    }
+    .features-header .features-headline {
+      font-size: clamp(1rem, 2.5vw, 1.35rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      margin-bottom: 0.35rem;
+    }
+    .features-header .features-desc {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      max-width: 420px;
+      margin: 0 auto 1rem;
     }
     .features {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0.5rem;
-      max-width: 1000px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0 2.5rem;
+      max-width: 640px;
       width: 100%;
       flex: 1;
       min-height: 0;
+      text-align: left;
     }
     .feature {
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 0.6rem 0.75rem;
       display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      backdrop-filter: blur(8px);
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.2s;
     }
-    .feature:hover {
-      border-color: rgba(212, 168, 83, 0.25);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-    .feature-icon {
-      width: 1.75rem;
-      height: 1.75rem;
-      border-radius: 0.4rem;
-      background: var(--accent-soft);
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .feature:last-child,
+    .feature:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+    .feature:hover { border-color: rgba(212, 168, 83, 0.2); }
+    .feature-title {
       font-size: 0.9rem;
-      flex-shrink: 0;
-    }
-    .feature-text h3 {
-      font-size: 0.75rem;
       font-weight: 700;
-      margin-bottom: 0.15rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
     }
-    .feature-text p {
+    .feature-desc {
       color: var(--text-muted);
-      font-size: 0.65rem;
-      line-height: 1.35;
+      font-size: 0.8rem;
+      line-height: 1.4;
     }
 
     /* Screenshots row — larger, sharper thumbnails */
@@ -303,14 +309,13 @@
     footer a { color: var(--accent); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
 
-    /* Responsive: fewer columns on small screens */
-    @media (max-width: 900px) {
-      .features { grid-template-columns: repeat(3, 1fr); }
-    }
+    /* Responsive */
     @media (max-width: 600px) {
-      .features { grid-template-columns: repeat(2, 1fr); }
+      .features { grid-template-columns: 1fr; gap: 0 0; max-width: 360px; }
+      .feature { border-bottom: 1px solid var(--border); }
+      .feature:last-child { border-bottom: none; }
+      .feature:nth-last-child(2):nth-child(odd) { border-bottom: 1px solid var(--border); }
       .screens-row { flex-wrap: wrap; justify-content: center; }
-      /* Allow scroll when wrapped content overflows so it isn't clipped */
       .page { overflow-y: auto; overflow-x: hidden; }
     }
 
@@ -376,77 +381,51 @@
     </section>
 
     <div class="features-wrap">
-      <h2 class="section-title">Everything you need</h2>
+      <header class="features-header">
+        <span class="features-label">Features</span>
+        <h2 class="features-headline">Everything you need</h2>
+        <p class="features-desc">Weight, injections, glucose, insights, and tools — one place, no clutter.</p>
+      </header>
       <div class="features">
         <div class="feature">
-          <div class="feature-icon">⚖️</div>
-          <div class="feature-text">
-            <h3>Weight & trends</h3>
-            <p>Log weight, charts, goals, BMI.</p>
-          </div>
+          <span class="feature-title">Weight & trends</span>
+          <p class="feature-desc">Log weight, charts, goals, BMI.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">💉</div>
-          <div class="feature-text">
-            <h3>Injections & schedules</h3>
-            <p>Doses, sites, split dosing, reminders.</p>
-          </div>
+          <span class="feature-title">Injections & schedules</span>
+          <p class="feature-desc">Doses, sites, split dosing, reminders.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🩸</div>
-          <div class="feature-text">
-            <h3>Glucose & A1C</h3>
-            <p>Log fasting/random glucose, A1C trends.</p>
-          </div>
+          <span class="feature-title">Glucose & A1C</span>
+          <p class="feature-desc">Log fasting/random glucose, A1C trends.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">📊</div>
-          <div class="feature-text">
-            <h3>Summary dashboard</h3>
-            <p>Weight change, 7-day average, injection markers.</p>
-          </div>
+          <span class="feature-title">Summary dashboard</span>
+          <p class="feature-desc">Weight change, 7-day average, injection markers.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🧬</div>
-          <div class="feature-text">
-            <h3>Insights & body phase</h3>
-            <p>Where you're at in your cycle, what to expect.</p>
-          </div>
+          <span class="feature-title">Insights & body phase</span>
+          <p class="feature-desc">Where you're at in your cycle, what to expect.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">📐</div>
-          <div class="feature-text">
-            <h3>Body measurements</h3>
-            <p>Waist, progress photos, timeline.</p>
-          </div>
+          <span class="feature-title">Body measurements</span>
+          <p class="feature-desc">Waist, progress photos, timeline.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🧮</div>
-          <div class="feature-text">
-            <h3>Calculators & tools</h3>
-            <p>BMI, TDEE, schedules, doctor summary.</p>
-          </div>
+          <span class="feature-title">Calculators & tools</span>
+          <p class="feature-desc">BMI, TDEE, schedules, doctor summary.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🔔</div>
-          <div class="feature-text">
-            <h3>Reminders</h3>
-            <p>Notifications even when app is closed.</p>
-          </div>
+          <span class="feature-title">Reminders</span>
+          <p class="feature-desc">Notifications even when app is closed.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">💊</div>
-          <div class="feature-text">
-            <h3>Peptides & hormones</h3>
-            <p>Semaglutide, tirzepatide, BPC-157, testosterone, HCG, and more.</p>
-          </div>
+          <span class="feature-title">Peptides & hormones</span>
+          <p class="feature-desc">Semaglutide, tirzepatide, BPC-157, testosterone, HCG, and more.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🔒</div>
-          <div class="feature-text">
-            <h3>Private by design</h3>
-            <p>Data stays on your device. No account.</p>
-          </div>
+          <span class="feature-title">Private by design</span>
+          <p class="feature-desc">Data stays on your device. No account.</p>
         </div>
       </div>
 
