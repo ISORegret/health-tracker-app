@@ -54,8 +54,9 @@ android {
     }
 }
 
+// flatDir used by Capacitor for plugin AARs; Gradle warns but no Maven layout here
 repositories {
-    flatDir{
+    flatDir {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }
