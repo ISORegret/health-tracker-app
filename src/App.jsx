@@ -88,6 +88,62 @@ const TYPICAL_WEEKLY_LOSS = {
   'Retatrutide': 0.8
 };
 
+// Simple meal estimator: common foods (cal, protein, carbs, fat per serving; optional hydrationOz)
+const COMMON_FOODS = {
+  'egg': { cal: 70, protein: 6, carbs: 0.5, fat: 5 },
+  'eggs': { cal: 70, protein: 6, carbs: 0.5, fat: 5 },
+  'chicken breast': { cal: 165, protein: 31, carbs: 0, fat: 4 },
+  'chicken thigh': { cal: 209, protein: 26, carbs: 0, fat: 11 },
+  'salmon': { cal: 208, protein: 20, carbs: 0, fat: 13 },
+  'ground beef': { cal: 215, protein: 24, carbs: 0, fat: 13 },
+  'greek yogurt': { cal: 100, protein: 17, carbs: 6, fat: 0.7 },
+  'cottage cheese': { cal: 120, protein: 14, carbs: 6, fat: 5 },
+  'protein shake': { cal: 120, protein: 24, carbs: 3, fat: 1 },
+  'oatmeal': { cal: 150, protein: 5, carbs: 27, fat: 3 },
+  'rice': { cal: 205, protein: 4, carbs: 45, fat: 0.4 },
+  'sweet potato': { cal: 103, protein: 2, carbs: 24, fat: 0 },
+  'broccoli': { cal: 55, protein: 4, carbs: 11, fat: 0.6 },
+  'spinach': { cal: 23, protein: 3, carbs: 4, fat: 0.4 },
+  'salad': { cal: 50, protein: 3, carbs: 8, fat: 1 },
+  'chicken salad': { cal: 350, protein: 30, carbs: 12, fat: 20 },
+  'avocado': { cal: 240, protein: 3, carbs: 13, fat: 22 },
+  'banana': { cal: 105, protein: 1, carbs: 27, fat: 0.4 },
+  'apple': { cal: 95, protein: 0.5, carbs: 25, fat: 0.3 },
+  'coffee': { cal: 2, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 },
+  'water': { cal: 0, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 },
+  'tea': { cal: 2, protein: 0, carbs: 0, fat: 0, hydrationOz: 8 }
+};
+
+function estimateMealFromDescription(desc) {
+  const text = (desc || '').toLowerCase().trim();
+  if (!text) return null;
+  const hasOz = /\d+\s*oz/i.test(text);
+  let mult = 1;
+  let rest = text;
+  if (!hasOz) {
+    const numMatch = text.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+    if (numMatch) {
+      mult = parseFloat(numMatch[1]);
+      rest = numMatch[2].trim();
+    }
+  }
+  const ozMatch = rest.match(/(\d+)\s*oz/i);
+  const oz = ozMatch ? parseInt(ozMatch[1], 10) : null;
+  const withoutOz = oz != null ? rest.replace(/\d+\s*oz\s*/gi, ' ').replace(/\s+/g, ' ').trim() : rest;
+  const key = Object.keys(COMMON_FOODS).find(k => withoutOz === k || withoutOz.includes(k));
+  const food = key ? COMMON_FOODS[key] : null;
+  if (!food) return null;
+  const hydrationOz = (oz != null && (key === 'water' || key === 'coffee' || key === 'tea')) ? oz : (food.hydrationOz ?? 0) * mult;
+  return {
+    label: desc.trim().slice(0, 40),
+    calories: Math.round((food.cal || 0) * mult),
+    protein: Math.round((food.protein || 0) * mult),
+    carbs: Math.round((food.carbs || 0) * mult),
+    fat: Math.round((food.fat || 0) * mult),
+    hydrationOz: hydrationOz ? Math.round(hydrationOz) : 0
+  };
+}
+
 // Phase timelines for each medication category (like glapp.io)
 const PHASE_TIMELINES = {
   'GLP-1': {
@@ -1054,15 +1110,16 @@ const PepTalk = () => {
   const [showGlucoseForm, setShowGlucoseForm] = useState(false);
   const [showA1cForm, setShowA1cForm] = useState(false);
 
-  // Daily track (hydration + protein)
+  // Daily track (hydration & protein from meals + optional extra water)
   const [dailyTrackEntries, setDailyTrackEntries] = useState([]);
-  const [dailyHydration, setDailyHydration] = useState('');
-  const [dailyProtein, setDailyProtein] = useState('');
   const [nutritionLabel, setNutritionLabel] = useState('');
   const [nutritionCalories, setNutritionCalories] = useState('');
   const [nutritionProtein, setNutritionProtein] = useState('');
   const [nutritionCarbs, setNutritionCarbs] = useState('');
   const [nutritionFat, setNutritionFat] = useState('');
+  const [nutritionHydrationOz, setNutritionHydrationOz] = useState('');
+  const [extraHydrationOz, setExtraHydrationOz] = useState('');
+  const [mealDescription, setMealDescription] = useState('');
 
   // More tab sub-section (when using 5 tabs)
   const [activeMoreSection, setActiveMoreSection] = useState('body');
@@ -2096,21 +2153,26 @@ const wipeAllData = () => {
     setTdeeResult({ bmr: Math.round(bmr), tdee });
   };
 
-  // Daily track: save today's hydration + protein
+  // Daily track: hydration & protein derived from meals; optional extra water
   const todayStr = getTodayLocal();
   const todayDaily = dailyTrackEntries.find(e => e.date === todayStr);
-  const addOrUpdateDailyTrack = () => {
-    const hydrationOz = dailyHydration !== '' ? parseFloat(dailyHydration) : (todayDaily?.hydrationOz ?? 0);
-    const proteinG = dailyProtein !== '' ? parseFloat(dailyProtein) : (todayDaily?.proteinG ?? 0);
+  const todayMeals = todayDaily?.meals ?? [];
+  const proteinFromMeals = todayMeals.reduce((s, m) => s + (m.protein ?? 0), 0);
+  const hydrationFromMeals = todayMeals.reduce((s, m) => s + (m.hydrationOz ?? 0), 0);
+  const proteinToday = todayMeals.length > 0 ? proteinFromMeals : (todayDaily?.proteinG ?? 0);
+  const hydrationToday = hydrationFromMeals + (todayDaily?.extraHydrationOz ?? (todayMeals.length > 0 ? 0 : todayDaily?.hydrationOz ?? 0));
+
+  const saveExtraHydration = () => {
+    const oz = extraHydrationOz !== '' ? parseFloat(extraHydrationOz) : 0;
+    if (isNaN(oz) || oz < 0) return;
     const existing = dailyTrackEntries.find(e => e.date === todayStr);
-    let updated = existing
-      ? dailyTrackEntries.map(e => e.date === todayStr ? { ...e, hydrationOz, proteinG } : e)
-      : [...dailyTrackEntries, { id: Date.now(), date: todayStr, hydrationOz, proteinG }];
+    const updated = existing
+      ? dailyTrackEntries.map(e => e.date === todayStr ? { ...e, extraHydrationOz: oz } : e)
+      : [...dailyTrackEntries, { id: Date.now(), date: todayStr, hydrationOz: 0, proteinG: 0, meals: [], extraHydrationOz: oz }];
     updated.sort((a, b) => b.date.localeCompare(a.date));
     setDailyTrackEntries(updated);
     saveData('health-daily-track', updated);
-    setDailyHydration('');
-    setDailyProtein('');
+    setExtraHydrationOz('');
   };
 
   const addNutritionEntry = () => {
@@ -2119,7 +2181,16 @@ const wipeAllData = () => {
     const protein = nutritionProtein !== '' ? parseFloat(nutritionProtein) : 0;
     const carbs = nutritionCarbs !== '' ? parseFloat(nutritionCarbs) : 0;
     const fat = nutritionFat !== '' ? parseFloat(nutritionFat) : 0;
-    const meal = { id: Date.now(), label: nutritionLabel.trim() || 'Meal', calories, protein: isNaN(protein) ? 0 : protein, carbs: isNaN(carbs) ? 0 : carbs, fat: isNaN(fat) ? 0 : fat };
+    const hydrationOz = nutritionHydrationOz !== '' ? parseFloat(nutritionHydrationOz) : 0;
+    const meal = {
+      id: Date.now(),
+      label: nutritionLabel.trim() || 'Meal',
+      calories,
+      protein: isNaN(protein) ? 0 : protein,
+      carbs: isNaN(carbs) ? 0 : carbs,
+      fat: isNaN(fat) ? 0 : fat,
+      hydrationOz: isNaN(hydrationOz) ? 0 : Math.max(0, hydrationOz)
+    };
     const existing = dailyTrackEntries.find(e => e.date === todayStr);
     const meals = [...(existing?.meals ?? []), meal];
     const updated = existing
@@ -2133,6 +2204,19 @@ const wipeAllData = () => {
     setNutritionProtein('');
     setNutritionCarbs('');
     setNutritionFat('');
+    setNutritionHydrationOz('');
+    setMealDescription('');
+  };
+
+  const applyMealEstimate = () => {
+    const est = estimateMealFromDescription(mealDescription);
+    if (!est) return;
+    setNutritionLabel(est.label);
+    setNutritionCalories(String(est.calories));
+    setNutritionProtein(String(est.protein));
+    setNutritionCarbs(String(est.carbs));
+    setNutritionFat(String(est.fat));
+    setNutritionHydrationOz(est.hydrationOz ? String(est.hydrationOz) : '');
   };
 
   const deleteNutritionEntry = (mealId) => {
@@ -3966,26 +4050,24 @@ const wipeAllData = () => {
           <div className="space-y-4">
             <div className="rounded-2xl p-4 border border-white/[0.06] bg-slate-800/60 backdrop-blur-sm">
               <h3 className="text-white font-medium mb-3 flex items-center gap-2"><Droplets className="h-4 w-4 text-sky-400" /><Beef className="h-4 w-4 text-amber-400" /><UtensilsCrossed className="h-4 w-4 text-amber-400" />Daily — Hydration, Protein & Nutrition</h3>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="text-slate-400 text-xs block mb-1">Hydration (oz today)</label>
-                  <input type="number" min="0" step="1" value={dailyHydration} onChange={(e) => setDailyHydration(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" placeholder={todayDaily?.hydrationOz ?? '0'} />
-                </div>
-                <div>
-                  <label className="text-slate-400 text-xs block mb-1">Protein (g today)</label>
-                  <input type="number" min="0" step="1" value={dailyProtein} onChange={(e) => setDailyProtein(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" placeholder={todayDaily?.proteinG ?? '0'} />
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-                <button onClick={addOrUpdateDailyTrack} className="bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-medium px-4 py-2 rounded-lg">Log hydration & protein</button>
+              <p className="text-slate-500 text-xs mb-3">Hydration and protein today are calculated from your meal entries below. Add optional extra water if you don’t log drinks as meals.</p>
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <label className="text-slate-400 text-xs">Extra water (oz)</label>
+                <input type="number" min="0" step="1" value={extraHydrationOz} onChange={(e) => setExtraHydrationOz(e.target.value)} className="w-20 bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" placeholder="0" />
+                <button onClick={saveExtraHydration} className="bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium px-3 py-2 rounded-lg">Save</button>
                 <button onClick={() => { setActiveMoreSection('tools'); setActiveToolSection('calculator'); }} className="text-amber-400 hover:text-amber-300 text-sm font-medium flex items-center gap-1">
-                  <Calculator className="h-4 w-4" /> Calorie / TDEE calculator
+                  <Calculator className="h-4 w-4" /> TDEE calculator
                 </button>
               </div>
+              <p className="text-slate-400 text-sm mb-4">Today: <span className="text-sky-400">{hydrationToday} oz</span> hydration · <span className="text-amber-400">{proteinToday} g</span> protein</p>
 
               <div className="border-t border-white/[0.06] pt-4 mt-4">
-                <h4 className="text-slate-300 text-sm font-medium mb-2 flex items-center gap-2"><UtensilsCrossed className="h-4 w-4" />Nutrition (calories & macros)</h4>
-                <p className="text-slate-500 text-xs mb-3">Add meals or snacks; totals update automatically.</p>
+                <h4 className="text-slate-300 text-sm font-medium mb-2 flex items-center gap-2"><UtensilsCrossed className="h-4 w-4" />Meals & calories</h4>
+                <p className="text-slate-500 text-xs mb-3">Add meals or snacks; hydration and protein today update from these entries. Use &quot;Estimate macros&quot; for quick add from a short description.</p>
+                <div className="flex gap-2 mb-3">
+                  <input type="text" value={mealDescription} onChange={(e) => setMealDescription(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" placeholder="e.g. 2 eggs, chicken salad, water 16 oz" />
+                  <button type="button" onClick={applyMealEstimate} className="bg-amber-500/80 hover:bg-amber-500 text-slate-900 text-sm font-medium px-3 py-2 rounded-lg whitespace-nowrap">Estimate macros</button>
+                </div>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div className="col-span-2">
                     <label className="text-slate-400 text-xs block mb-1">Label (e.g. Breakfast)</label>
@@ -4007,6 +4089,10 @@ const wipeAllData = () => {
                     <label className="text-slate-400 text-xs block mb-1">Fat (g)</label>
                     <input type="number" min="0" step="1" value={nutritionFat} onChange={(e) => setNutritionFat(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" placeholder="0" />
                   </div>
+                  <div>
+                    <label className="text-slate-400 text-xs block mb-1">Water (oz) — for drinks</label>
+                    <input type="number" min="0" step="1" value={nutritionHydrationOz} onChange={(e) => setNutritionHydrationOz(e.target.value)} className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm" placeholder="0" />
+                  </div>
                 </div>
                 <button onClick={addNutritionEntry} className="w-full bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium py-2 rounded-lg mb-4">Add entry</button>
 
@@ -4020,6 +4106,9 @@ const wipeAllData = () => {
                             <span className="text-slate-400 ml-2">{meal.calories} cal</span>
                             {(meal.protein > 0 || meal.carbs > 0 || meal.fat > 0) && (
                               <span className="text-slate-500 text-xs ml-2">P {meal.protein}g · C {meal.carbs}g · F {meal.fat}g</span>
+                            )}
+                            {(meal.hydrationOz ?? 0) > 0 && (
+                              <span className="text-sky-400 text-xs ml-2">{meal.hydrationOz} oz</span>
                             )}
                           </div>
                           <button type="button" onClick={() => deleteNutritionEntry(meal.id)} className="p-1.5 text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity rounded"><Trash2 className="h-4 w-4" /></button>
@@ -4040,9 +4129,6 @@ const wipeAllData = () => {
                 )}
               </div>
 
-              {todayDaily && (todayDaily.hydrationOz > 0 || todayDaily.proteinG > 0) && (
-                <p className="text-slate-500 text-xs mt-3">Hydration today: {todayDaily.hydrationOz || 0} oz · Protein (quick log): {todayDaily.proteinG || 0} g</p>
-              )}
             </div>
           </div>
             )}
