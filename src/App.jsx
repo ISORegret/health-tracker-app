@@ -9,6 +9,7 @@ const APP_VERSION = '1.0.0';
 // Comprehensive peptide/medication list with pharmacokinetic data
 const MEDICATIONS = [
   { name: 'Semaglutide', category: 'GLP-1', color: '#10b981', defaultSchedule: 7, halfLife: 168, peakHours: 48, effectDuration: 168 },
+  { name: 'Rybelsus (Oral Semaglutide)', category: 'GLP-1', color: '#10b981', defaultSchedule: 1, halfLife: 168, peakHours: 4, effectDuration: 24 },
   { name: 'Tirzepatide', category: 'GLP-1/GIP', color: '#14b8a6', defaultSchedule: 7, halfLife: 120, peakHours: 48, effectDuration: 168 },
   { name: 'Liraglutide', category: 'GLP-1', color: '#059669', defaultSchedule: 1, halfLife: 13, peakHours: 12, effectDuration: 24 },
   { name: 'Dulaglutide', category: 'GLP-1', color: '#0d9488', defaultSchedule: 7, halfLife: 120, peakHours: 48, effectDuration: 168 },
@@ -81,6 +82,7 @@ const EFFECT_PROFILES = {
 // Typical weekly weight loss (lb/week) from trials — for "On track?" comparison (approximate)
 const TYPICAL_WEEKLY_LOSS = {
   'Semaglutide': 0.6, 'Wegovy': 0.6, 'Ozempic': 0.5,
+  'Rybelsus (Oral Semaglutide)': 0.4,
   'Tirzepatide': 0.7, 'Mounjaro': 0.7, 'Zepbound': 0.7,
   'Liraglutide': 0.4, 'Dulaglutide': 0.4,
   'Retatrutide': 0.8

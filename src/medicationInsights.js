@@ -20,6 +20,12 @@ export const MEDICATION_EFFECT_PROFILES = {
     peakEffects: 'Peak blood levels around 1–3 days after injection; strongest appetite suppression days 2–4',
     steadyState: '4–5 weeks of weekly dosing to reach steady state'
   },
+  'Rybelsus (Oral Semaglutide)': {
+    effects: ['Appetite suppression', 'Blood sugar control', 'Weight loss', 'Gastric emptying delay'],
+    sideEffects: ['Nausea', 'Constipation', 'Diarrhea', 'Heartburn', 'Decreased appetite'],
+    peakEffects: 'Peak blood levels 1–4 hours after morning dose; take on empty stomach, wait 30 min before eating',
+    steadyState: '4–5 weeks of daily dosing to reach steady state'
+  },
   'Tirzepatide': {
     effects: ['GLP-1 and GIP dual action', 'Appetite suppression', 'Insulin sensitivity', 'Weight loss'],
     sideEffects: ['Nausea', 'Diarrhea', 'Decreased appetite', 'Injection site reactions'],
