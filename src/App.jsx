@@ -2005,7 +2005,7 @@ const wipeAllData = () => {
     return { med: lastInjection.type, dose: `${lastInjection.dose}${lastInjection.unit}`, typical, userLoss, status };
   };
 
-  // Chart data: your cumulative weight loss vs typical (clinical trial) cumulative loss by week (up to 1 week past current)
+  // Chart data: your cumulative weight loss vs typical — week 1 through current week + 1
   const getYouVsTypicalChartData = () => {
     const onTrack = getOnTrackInfo();
     if (!onTrack) return [];
@@ -2017,18 +2017,18 @@ const wipeAllData = () => {
     const msPerWeek = 7 * 24 * 60 * 60 * 1000;
     const now = new Date();
     const currentWeekIndex = Math.floor((now - startDate) / msPerWeek);
-    const weeksTotal = Math.max(1, currentWeekIndex + 1); // only up to 1 week past where we are now
+    const endWeek = Math.max(1, currentWeekIndex + 1);
     const points = [];
-    for (let w = 0; w <= weeksTotal; w++) {
+    for (let w = 1; w <= endWeek; w++) {
       const weekEnd = new Date(startDate);
       weekEnd.setDate(weekEnd.getDate() + w * 7);
-      const weekLabel = w === 0 ? 'Start' : `Week ${w}`;
+      const weekLabel = `W${w}`;
       const typicalLoss = onTrack.typical * w;
       const weightsUpToWeekEnd = sorted.filter(e => parseLocalDate(e.date) <= weekEnd);
       const latestInWindow = weightsUpToWeekEnd.length ? weightsUpToWeekEnd[weightsUpToWeekEnd.length - 1] : null;
-      const userLoss = latestInWindow ? Math.max(0, startWeight - parseFloat(latestInWindow.weight)) : (w === 0 ? 0 : null);
-      if (userLoss !== null || w === 0) {
-        points.push({ weekLabel, weeks: w, userLoss: userLoss ?? 0, typicalLoss });
+      const userLoss = latestInWindow ? Math.max(0, startWeight - parseFloat(latestInWindow.weight)) : null;
+      if (userLoss !== null) {
+        points.push({ weekLabel, weeks: w, userLoss, typicalLoss });
       }
     }
     return points.length > 1 ? points : [];
