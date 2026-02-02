@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'recharts': ['recharts'],
-          'capacitor': ['@capacitor/core', '@capacitor/android', '@capacitor/ios', '@capacitor/local-notifications', '@capacitor/status-bar'],
+          'capacitor': ['@capacitor/core', '@capacitor/local-notifications', '@capacitor/status-bar'],
         },
       },
     },

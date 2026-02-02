@@ -1642,8 +1642,8 @@ const PepTalk = () => {
     reader.readAsDataURL(file);
   };
 
-  // Export all data to JSON file
-  const exportData = () => {
+  // Export all data to JSON file (on native: write to cache + share so user can save)
+  const exportData = async () => {
     const allData = {
       exportDate: new Date().toISOString(),
       version: '1.0',
@@ -1659,13 +1659,37 @@ const PepTalk = () => {
       a1cEntries,
       userProfile
     };
-    
+
     const dataStr = JSON.stringify(allData, null, 2);
+    const filename = `health-tracker-backup-${getTodayLocal()}.json`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+        const result = await Filesystem.writeFile({
+          path: filename,
+          data: dataStr,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: 'PepTalk backup',
+          files: [result.uri],
+          dialogTitle: 'Save backup (e.g. to Files or Drive)'
+        });
+      } catch (err) {
+        console.error('Export failed:', err);
+        alert('Export failed: ' + (err?.message || String(err)));
+      }
+      return;
+    }
+
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `health-tracker-backup-${getTodayLocal()}.json`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1804,7 +1828,7 @@ ${userProfile?.goalWeight ? `<p class="meta">Goal weight: ${userProfile.goalWeig
     setTimeout(() => { try { win.print(); } finally { win.close(); } }, 400);
   };
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
     const sortedWeights = sortWeightByDateAsc(weightEntries);
     const sortedInjections = [...injectionEntries].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     const sortedGlucose = sortByDateDesc(glucoseEntries);
@@ -1816,21 +1840,45 @@ ${userProfile?.goalWeight ? `<p class="meta">Goal weight: ${userProfile.goalWeig
     sortedGlucose.forEach(e => rows.push(`Glucose,${e.date},${e.value} mg/dL (${e.type}),,,`));
     sortedA1c.forEach(e => rows.push(`A1C,${e.date},${e.value}%,,,`));
     const csv = rows.join('\n');
+    const filename = `PepTalk-export-${getTodayLocal()}.csv`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+        const result = await Filesystem.writeFile({
+          path: filename,
+          data: csv,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: 'PepTalk export',
+          files: [result.uri],
+          dialogTitle: 'Save CSV (e.g. to Files or Drive)'
+        });
+      } catch (err) {
+        console.error('CSV export failed:', err);
+        alert('Export failed: ' + (err?.message || String(err)));
+      }
+      return;
+    }
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `PepTalk-export-${getTodayLocal()}.csv`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  const runExport = () => {
-    if (exportFormat === 'json') exportData();
+  const runExport = async () => {
+    if (exportFormat === 'json') await exportData();
     else if (exportFormat === 'doctor') printDoctorSummary();
-    else if (exportFormat === 'csv') exportCSV();
+    else if (exportFormat === 'csv') await exportCSV();
   };
 
 // Wipe ALL local data and reset state (factory reset)
