@@ -17,11 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import { useSpots } from '../../src/context/SpotsContext';
-import { useTheme } from '../../src/context/ThemeContext';
-import { SpotType, SPOT_TYPE_LABELS } from '../../src/types/spot';
-
-const defaultScore = 0;
+import { useSpots } from '../../../src/context/SpotsContext';
+import { useTheme } from '../../../src/context/ThemeContext';
+import { SpotType, SPOT_TYPE_LABELS } from '../../../src/types/spot';
 
 const SPOT_TYPES: SpotType[] = [
   'general',
@@ -35,12 +33,16 @@ const SPOT_TYPES: SpotType[] = [
   'architecture',
 ];
 
-export default function AddSpotScreen() {
-  const { addSpot } = useSpots();
+function isRemoteUri(uri: string): boolean {
+  return uri.startsWith('http://') || uri.startsWith('https://');
+}
+
+export default function EditSpotScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { getSpotById, updateSpot } = useSpots();
   const { theme } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<{ lat?: string; lng?: string }>();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const spot = id ? getSpotById(id) : undefined;
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState('');
@@ -57,12 +59,25 @@ export default function AddSpotScreen() {
   const [pickingImage, setPickingImage] = useState(false);
 
   useEffect(() => {
-    if (params.lat != null && params.lng != null) {
-      setLatitude(params.lat);
-      setLongitude(params.lng);
-      if (!address) setAddress('Picked from map');
+    if (spot && spot.id.startsWith('user-')) {
+      setName(spot.name);
+      setAddress(spot.address);
+      setLatitude(spot.latitude.toString());
+      setLongitude(spot.longitude.toString());
+      setBestTime(spot.bestTime);
+      setPhotoBy(spot.photoBy);
+      setSpotType(spot.spotType);
+      setParkingInfo(spot.parkingInfo ?? '');
+      setPhotographyTips(spot.photographyTips ?? '');
+      if (isRemoteUri(spot.imageUri)) {
+        setImageUri(spot.imageUri);
+        setLocalImageUri(null);
+      } else {
+        setImageUri('');
+        setLocalImageUri(spot.imageUri);
+      }
     }
-  }, [params.lat, params.lng]);
+  }, [spot?.id]);
 
   const pickFromGallery = async () => {
     setPickingImage(true);
@@ -83,8 +98,7 @@ export default function AddSpotScreen() {
       const dir = `${FileSystem.documentDirectory}spots`;
       const exists = await FileSystem.getInfoAsync(dir);
       if (!exists.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-      const filename = `spot-${Date.now()}.jpg`;
-      const destUri = `${dir}/${filename}`;
+      const destUri = `${dir}/spot-${Date.now()}.jpg`;
       await FileSystem.copyAsync({ from: sourceUri, to: destUri });
       setLocalImageUri(destUri);
       setImageUri('');
@@ -115,6 +129,10 @@ export default function AddSpotScreen() {
   };
 
   const handleSubmit = async () => {
+    if (!spot?.id.startsWith('user-')) {
+      Alert.alert('Error', 'You can only edit spots you created.');
+      return;
+    }
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
     if (!name.trim()) {
@@ -137,39 +155,55 @@ export default function AddSpotScreen() {
 
     setSaving(true);
     try {
-      await addSpot({
+      await updateSpot(spot.id, {
         name: name.trim(),
         address: address.trim(),
         latitude: lat,
         longitude: lng,
         bestTime: bestTime.trim() || 'Not specified',
-        score: defaultScore,
         imageUri: finalImageUri,
         photoBy: photoBy.trim() || 'You',
         spotType: spotType ?? undefined,
         parkingInfo: parkingInfo.trim() || undefined,
         photographyTips: photographyTips.trim() || undefined,
       });
-      Alert.alert('Spot added', 'Your photo spot is saved and will appear in For You and on the Map.', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+      Alert.alert('Spot updated', 'Your changes have been saved.', [
+        { text: 'OK', onPress: () => router.back() },
       ]);
-      setName('');
-      setAddress('');
-      setLatitude('');
-      setLongitude('');
-      setBestTime('');
-      setImageUri('');
-      setPhotoBy('');
-      setSpotType(undefined);
-      setParkingInfo('');
-      setPhotographyTips('');
-      setLocalImageUri(null);
     } catch (e) {
-      Alert.alert('Error', 'Could not save spot. Try again.');
+      Alert.alert('Error', 'Could not save changes. Try again.');
     } finally {
       setSaving(false);
     }
   };
+
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
+  if (!spot) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.error}>Spot not found</Text>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backBtnText}>Go back</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (!spot.id.startsWith('user-')) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.error}>You can only edit spots you created.</Text>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backBtnText}>Go back</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -183,12 +217,14 @@ export default function AddSpotScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Add a photo spot</Text>
-          <Text style={styles.subtitle}>
-            For photographers & car photographers. Add parking and tips so others can plan shoots.
-          </Text>
+        <View style={styles.headerRow}>
+          <Pressable style={styles.backButton} onPress={() => router.back()} hitSlop={16}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </Pressable>
+          <Text style={styles.title}>Edit spot</Text>
+          <View style={styles.headerSpacer} />
         </View>
+        <Text style={styles.subtitle}>Update name, address, photo, parking & tips.</Text>
 
         <View style={styles.section}>
           <Text style={styles.label}>Spot type</Text>
@@ -285,7 +321,6 @@ export default function AddSpotScreen() {
             placeholder="e.g. Street parking 50m, lot around corner"
             placeholderTextColor={theme.textMuted}
           />
-          <Text style={styles.hint}>Helps car photographers plan shoots (Locationscout-style)</Text>
         </View>
 
         <View style={styles.section}>
@@ -323,7 +358,7 @@ export default function AddSpotScreen() {
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [styles.photoBtn, styles.photoBtnRemove, pressed && styles.photoBtnPressed]}
-                  onPress={() => { setLocalImageUri(null); }}
+                  onPress={() => setLocalImageUri(null)}
                 >
                   <Ionicons name="trash-outline" size={20} color={theme.error} />
                   <Text style={[styles.photoBtnText, styles.photoBtnTextRemove]}>Remove</Text>
@@ -384,17 +419,11 @@ export default function AddSpotScreen() {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Ionicons name="add-circle-outline" size={22} color="#fff" />
-              <Text style={styles.submitBtnText}>Add spot</Text>
+              <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
+              <Text style={styles.submitBtnText}>Save changes</Text>
             </>
           )}
         </Pressable>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Spots you add are stored on this device. To share them across devices or with others, you’d need a backend (we can add that later).
-          </Text>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -402,214 +431,157 @@ export default function AddSpotScreen() {
 
 function makeStyles(theme: ReturnType<typeof useTheme>['theme']) {
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: theme.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.text,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: theme.surface,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: theme.text,
-    borderWidth: 1.5,
-    borderColor: theme.border,
-  },
-  coordRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  coordInput: {
-    flex: 1,
-  },
-  typeChips: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  typeChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: theme.surface,
-    borderWidth: 1.5,
-    borderColor: theme.border,
-  },
-  typeChipActive: {
-    backgroundColor: theme.accent,
-    borderColor: theme.accent,
-  },
-  typeChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.textSecondary,
-  },
-  typeChipTextActive: {
-    color: '#fff',
-  },
-  inputMultiline: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  galleryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 18,
-    backgroundColor: theme.accentLight,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: theme.accent,
-    borderStyle: 'dashed',
-  },
-  galleryBtnDisabled: {
-    opacity: 0.7,
-  },
-  galleryBtnPressed: {
-    opacity: 0.9,
-  },
-  galleryBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.accent,
-  },
-  orText: {
-    fontSize: 13,
-    color: theme.textMuted,
-    textAlign: 'center',
-    marginVertical: 10,
-  },
-  photoPreviewWrap: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  photoPreview: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  photoPreviewActions: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 12,
-  },
-  photoBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    backgroundColor: theme.surfaceMuted,
-    borderRadius: 12,
-  },
-  photoBtnPressed: {
-    opacity: 0.8,
-  },
-  photoBtnRemove: {
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
-  },
-  photoBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.accent,
-  },
-  photoBtnTextRemove: {
-    color: theme.error,
-  },
-  hint: {
-    fontSize: 12,
-    color: theme.textMuted,
-    marginTop: 6,
-  },
-  locationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 10,
-    paddingVertical: 14,
-    backgroundColor: theme.accentLight,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: theme.accent,
-  },
-  locationBtnPressed: {
-    opacity: 0.8,
-  },
-  locationBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.accent,
-  },
-  submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 12,
-    paddingVertical: 16,
-    backgroundColor: theme.accent,
-    borderRadius: 14,
-  },
-  submitBtnDisabled: {
-    opacity: 0.5,
-  },
-  submitBtnPressed: {
-    opacity: 0.9,
-  },
-  submitBtnText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  footer: {
-    marginTop: 24,
-    padding: 14,
-    backgroundColor: theme.surfaceMuted,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  footerText: {
-    fontSize: 12,
-    color: theme.textSecondary,
-    lineHeight: 18,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: theme.bg,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    error: {
+      fontSize: 16,
+      color: theme.textSecondary,
+    },
+    backBtn: {
+      marginTop: 16,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      backgroundColor: theme.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    backBtnText: {
+      color: theme.accent,
+      fontWeight: '600',
+    },
+    scroll: { flex: 1 },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    backButton: {
+      padding: 8,
+      marginRight: 8,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: theme.text,
+      flex: 1,
+    },
+    headerSpacer: { width: 40 },
+    subtitle: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      marginBottom: 24,
+      lineHeight: 20,
+    },
+    section: { marginBottom: 20 },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: theme.surface,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 16,
+      color: theme.text,
+      borderWidth: 1.5,
+      borderColor: theme.border,
+    },
+    coordRow: { flexDirection: 'row', gap: 12 },
+    coordInput: { flex: 1 },
+    typeChips: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+    typeChip: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 24,
+      backgroundColor: theme.surface,
+      borderWidth: 1.5,
+      borderColor: theme.border,
+    },
+    typeChipActive: { backgroundColor: theme.accent, borderColor: theme.accent },
+    typeChipText: { fontSize: 13, fontWeight: '600', color: theme.textSecondary },
+    typeChipTextActive: { color: '#fff' },
+    inputMultiline: { minHeight: 80, textAlignVertical: 'top' as const },
+    galleryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      paddingVertical: 18,
+      backgroundColor: theme.accentLight,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: theme.accent,
+      borderStyle: 'dashed',
+    },
+    galleryBtnDisabled: { opacity: 0.7 },
+    galleryBtnPressed: { opacity: 0.9 },
+    galleryBtnText: { fontSize: 16, fontWeight: '600', color: theme.accent },
+    orText: { fontSize: 13, color: theme.textMuted, textAlign: 'center' as const, marginVertical: 10 },
+    photoPreviewWrap: {
+      borderRadius: 14,
+      overflow: 'hidden',
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    photoPreview: { width: '100%', height: 200, resizeMode: 'cover' as const },
+    photoPreviewActions: { flexDirection: 'row', gap: 12, padding: 12 },
+    photoBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 10,
+      backgroundColor: theme.surfaceMuted,
+      borderRadius: 12,
+    },
+    photoBtnPressed: { opacity: 0.8 },
+    photoBtnRemove: { backgroundColor: 'rgba(220, 38, 38, 0.1)' },
+    photoBtnText: { fontSize: 14, fontWeight: '600', color: theme.accent },
+    photoBtnTextRemove: { color: theme.error },
+    locationBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 10,
+      paddingVertical: 14,
+      backgroundColor: theme.accentLight,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: theme.accent,
+    },
+    locationBtnPressed: { opacity: 0.8 },
+    locationBtnText: { fontSize: 15, fontWeight: '600', color: theme.accent },
+    submitBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 12,
+      paddingVertical: 16,
+      backgroundColor: theme.accent,
+      borderRadius: 14,
+    },
+    submitBtnDisabled: { opacity: 0.5 },
+    submitBtnPressed: { opacity: 0.9 },
+    submitBtnText: { fontSize: 17, fontWeight: '600', color: '#fff' },
   });
 }
