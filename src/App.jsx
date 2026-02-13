@@ -2360,7 +2360,18 @@ const wipeAllData = () => {
     saveData('health-daily-track', updated);
   };
 
-  // Medication level calculations (pharmacokinetics)
+  // Convert injection dose to mg-equivalent for pharmacokinetic weighting (same units = comparable)
+  const toDoseMg = (inj) => {
+    let dose = parseFloat(inj.dose);
+    if (isNaN(dose)) return 0;
+    if (inj.unit === 'mcg') return dose / 1000;
+    if (inj.unit === 'ml') return dose;
+    if (inj.unit === 'units') return dose / 100;
+    if (inj.unit === 'IU') return dose / 1000;
+    return dose; // mg
+  };
+
+  // Medication level calculations (pharmacokinetics) — weighted by user's actual dose
   const calculateMedicationLevel = (injection, medication) => {
     const now = new Date();
     const injectionDate = parseLocalDate(injection.date);
@@ -2369,11 +2380,11 @@ const wipeAllData = () => {
     if (hoursElapsed < 0) return 0; // Future injection
     if (!medication.halfLife) return 0;
     
-    // Calculate remaining percentage using exponential decay
+    const doseMg = toDoseMg(injection);
     const halfLivesElapsed = hoursElapsed / medication.halfLife;
-    const remainingPercentage = Math.pow(0.5, halfLivesElapsed) * 100;
+    const remainingMg = doseMg * Math.pow(0.5, halfLivesElapsed);
     
-    return Math.max(0, remainingPercentage);
+    return Math.max(0, remainingMg);
   };
 
   // Get current phase based on hours since injection (medication-specific first, then category fallback)
@@ -2428,18 +2439,21 @@ const wipeAllData = () => {
       const lastInjection = sorted[0];
       const hoursAgo = (now - parseLocalDate(lastInjection.date)) / (1000 * 60 * 60);
       
-      // Calculate TOTAL current level from ALL recent injections (not just last one)
-      let totalLevel = 0;
+      // Calculate TOTAL current level from ALL recent injections, weighted by user's actual dose
+      let totalRemainingMg = 0;
       injections.forEach(inj => {
         const injDate = parseLocalDate(inj.date);
         const hoursElapsed = (now - injDate) / (1000 * 60 * 60);
         if (hoursElapsed >= 0) {
+          const doseMg = toDoseMg(inj);
           const halfLivesElapsed = hoursElapsed / medication.halfLife;
-          const level = Math.pow(0.5, halfLivesElapsed) * 100;
-          if (level > 0.1) totalLevel += level;
+          const remaining = doseMg * Math.pow(0.5, halfLivesElapsed);
+          if (remaining > 0.0001) totalRemainingMg += remaining;
         }
       });
-      const currentLevel = totalLevel;
+      // Display as % of last dose (100% = one dose equivalent remaining)
+      const lastDoseMg = toDoseMg(lastInjection);
+      const currentLevel = lastDoseMg > 0 ? (totalRemainingMg / lastDoseMg) * 100 : 0;
       
       // Get current phase from timeline (medication-specific first, then category)
       const currentPhase = getCurrentPhase(hoursAgo, medication.category, medication.name);
@@ -2498,21 +2512,25 @@ const wipeAllData = () => {
       date.setDate(date.getDate() + i);
       const dateStr = formatDateLocal(date);
       
-      // Calculate total level from all injections
-      let totalLevel = 0;
-      recentInjections.forEach(inj => {
+      // Calculate total level from all injections before this date, weighted by user's actual dose
+      const injectionsBeforeDate = recentInjections.filter(inj => parseLocalDate(inj.date) <= date);
+      let totalRemainingMg = 0;
+      injectionsBeforeDate.forEach(inj => {
         const injDate = parseLocalDate(inj.date);
-        if (injDate <= date) {
-          const hoursElapsed = (date - injDate) / (1000 * 60 * 60);
-          const halfLivesElapsed = hoursElapsed / medication.halfLife;
-          const level = Math.pow(0.5, halfLivesElapsed) * 100;
-          if (level > 0.1) totalLevel += level;
-        }
+        const hoursElapsed = (date - injDate) / (1000 * 60 * 60);
+        const doseMg = toDoseMg(inj);
+        const halfLivesElapsed = hoursElapsed / medication.halfLife;
+        const remaining = doseMg * Math.pow(0.5, halfLivesElapsed);
+        if (remaining > 0.0001) totalRemainingMg += remaining;
       });
+      // Display as % of most recent dose at that point in time (100% = one dose equivalent)
+      const lastInjAtDate = injectionsBeforeDate[injectionsBeforeDate.length - 1];
+      const lastDoseMg = lastInjAtDate ? toDoseMg(lastInjAtDate) : 0;
+      const level = lastDoseMg > 0 ? (totalRemainingMg / lastDoseMg) * 100 : 0;
       
       data.push({
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        level: Math.round(totalLevel) // Round to whole number, no cap
+        level: Math.round(level)
       });
     }
     
