@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+/**
+ * Build APK: bump version, build, copy to website/
+ */
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.join(__dirname, '..');
+const isWin = process.platform === 'win32';
+const gradleCmd = isWin ? 'gradlew.bat' : './gradlew';
+
+// 1. Bump version
+execSync('node scripts/bump-version.js', { cwd: root, stdio: 'inherit' });
+
+// 2. Build web + sync to Android
+execSync('npm run build:android', { cwd: root, stdio: 'inherit' });
+
+// 3. Build APK
+execSync(`${gradleCmd} assembleDebug`, { cwd: path.join(root, 'android'), stdio: 'inherit' });
+
+// 4. Copy APK to website/
+const apkSrc = path.join(root, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'PepTalk-debug.apk');
+const apkDest = path.join(root, 'website', 'PepTalk.apk');
+fs.mkdirSync(path.dirname(apkDest), { recursive: true });
+fs.copyFileSync(apkSrc, apkDest);
+
+// 5. Update version in website/index.html
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const version = pkg.version;
+const indexPath = path.join(root, 'website', 'index.html');
+let indexHtml = fs.readFileSync(indexPath, 'utf8');
+indexHtml = indexHtml.replace(/__APK_VERSION__/g, version);
+fs.writeFileSync(indexPath, indexHtml);
+
+console.log(`\nAPK copied to website/PepTalk.apk (v${version})`);

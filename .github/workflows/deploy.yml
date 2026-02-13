@@ -40,7 +40,8 @@ jobs:
           mkdir -p dist/PepTalk
           find dist -maxdepth 1 -mindepth 1 ! -name PepTalk -exec mv {} dist/PepTalk/ \;
           sed -i 's|/PepTalk/|/PepTalk/PepTalk/|g' dist/PepTalk/manifest.json 2>/dev/null || true
-          cp website/index.html dist/
+          VERSION=$(grep -o '"version": "[^"]*"' package.json | head -1 | cut -d'"' -f4)
+          sed "s/__APK_VERSION__/$VERSION/g" website/index.html > dist/index.html
           [ -f website/PepTalk.apk ] && cp website/PepTalk.apk dist/ || true
           [ -d website/screenshots ] && cp -r website/screenshots dist/ || true
       
