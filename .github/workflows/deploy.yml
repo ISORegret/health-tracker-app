@@ -35,6 +35,14 @@ jobs:
       - name: Build
         run: npm run build
       
+      - name: Prepare deploy (landing + app + APK)
+        run: |
+          mkdir -p dist/PepTalk
+          find dist -maxdepth 1 -mindepth 1 ! -name PepTalk -exec mv {} dist/PepTalk/ \;
+          cp website/index.html dist/
+          [ -f website/PepTalk.apk ] && cp website/PepTalk.apk dist/ || true
+          [ -d website/screenshots ] && cp -r website/screenshots dist/ || true
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
